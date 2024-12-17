@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <script src="/static/script.js"></script>
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <h1 class="text-center mb-4">Выберите вашу роль:</h1>
+                <form action="/" method="get" id="roleForm">
+                    <div class="form-group">
+                        <input type="radio" id="buyerRole" name="role" value="buyer" class="custom-control-input">
+                        <label class="custom-control-label" for="buyerRole">Покупатель</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="radio" id="managerRole" name="role" value="manager" class="custom-control-input">
+                        <label class="custom-control-label" for="managerRole">Менеджер</label>
+                    </div>
+                </form>
+
+                <button type="submit" form="roleForm" class="btn btn-primary mt-3 w-100">Выбрать роль</button>
+            </div>
+        </div>
+
+        <!-- Дополнительная форма для покупателя -->
+        <div id="buyerForm" style="display:none;" class="mt-5">
+
+            <h3 class="text-center">Заполнение данных покупателя</h3>
+            <form action="/" method="get">
+                <div class="form-group">
+                    <label for="last_name">Фамилия:</label>
+                    <input type="text" class="form-control" id="last_name" name="last_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="first_name">Имя:</label>
+                    <input type="text" class="form-control" id="first_name" name="first_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="patrynomic">Отчество:</label>
+                    <input type="text" class="form-control" id="patrynomic" name="patrynomic" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Номер телефона:</label>
+                    <input type="tel" class="form-control" id="phone" name="phone" required>
+                </div>
+                <button onclick="read_customer_to_db()" type="submit" class="btn btn-success w-100">Отправить данные</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+<!--<script>-->
+<!--    $(document).ready(function() {-->
+<!--        $('#roleForm').on('submit', function(e) {-->
+<!--            e.preventDefault();-->
+<!--            -->
+<!--            var role = $('input[name="role"]:checked').val();-->
+<!--            -->
+<!--            if (role === 'buyer') {-->
+<!--                $('#buyerForm').show();-->
+<!--                $('.btn-primary').hide();-->
+<!--                $('.justify-content-center').hide();-->
+<!--            } else {-->
+<!--                // Обработка для менеджера-->
+<!--                alert('Роль менеджера не реализована');-->
+<!--            }-->
+<!--        });-->
+<!--    });-->
+
+<!--</script>-->
+<script>
+    $(document).ready(function() {
+        $('#roleForm').on('submit', function(e) {
+            e.preventDefault();
+
+            var role = $('input[name="role"]:checked').val();
+
+            if (role === 'buyer') {
+                $('#buyerForm').show();
+                $('.btn-primary').hide();
+                $('.justify-content-center').hide();
+            } else if (role === 'manager') {
+                // Перенаправление на страницу для менеджера
+                window.location.href = 'http://127.0.0.1:7093/docs';
+            }
+        });
+    });
+</script>
