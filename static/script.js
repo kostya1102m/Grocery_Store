@@ -1,4 +1,5 @@
 async function read_customer_to_db() {
+
     const phone = document.getElementById("phone").value;
     const first_name = document.getElementById("first_name").value;
     const last_name = document.getElementById("last_name").value;
@@ -10,20 +11,26 @@ async function read_customer_to_db() {
         'last_name': last_name,
         'patrynomic': patrynomic
     }
-
     try {
+    const response = await axios.post('/user/', data);
 
-        const response = await axios.post('/user/', data);
-        if (response.data.message) {
-            window.location.href = 'http://127.0.0.1:7093/customer_page/'; // Перенаправляем на страницу пользователя
-            alert(response.data.message); // Поздравляем пользователя с успешным входом
-        }
-    } catch (error) {
-        if (error.response) {
-            const errorMessage = error.response.data.detail || "Что-то пошло не так";
-            alert(errorMessage);
-        } else {
-            alert('Что-то пошло не так');
-        }
+    if (response.status === 200 || response.status === 205) {
+        window.location.href = '/customer_page/';
+        alert('Успешный вход');
     }
+} catch (error) {
+    // Обработка ошибок запроса
+    if (error.response) {
+        // Запрос был сделан, и сервер ответил с кодом состояния, который выходит за пределы 2xx
+        alert(error.response.data.detail || 'Что-то пошло не так');
+    } else if (error.request) {
+        // Запрос был сделан, но ответа не было
+        alert('Нет ответа от сервера');
+    } else {
+        // Что-то произошло при настройке запроса
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+
 }
