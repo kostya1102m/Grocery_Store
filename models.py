@@ -23,6 +23,8 @@ class Product(Base):
     price: Mapped[float] = mapped_column(DECIMAL(10, 2))
     quantity: Mapped[int] = mapped_column(Integer)
 
+    ordered_products = relationship("Ordered_product", back_populates="product", uselist=True)
+
 class Order(Base):
     __tablename__ = "orders"
 
@@ -36,7 +38,7 @@ class Order(Base):
     user = relationship("User", back_populates="order")
 
     # Связь заказ->заказ-товар, один ко многим
-    ordered_products = relationship("Ordered_product", back_populates="order", cascade="all, delete-orphan")
+    ordered_products = relationship("Ordered_product", back_populates="order", uselist=True)
 
 class Ordered_product(Base):
     __tablename__ = "ordered_products"
@@ -51,17 +53,20 @@ class Ordered_product(Base):
     )
     # Связь заказ-товар->заказ, многие ко одному
     order = relationship("Order", back_populates="ordered_products")
+    # Связь заказ-товар->товар многие к одному
+    product = relationship("Product", back_populates="ordered_products")
+
 
     # Связь заказ-товар->товар один ко одному
-    picked_product = relationship("Picked_product", back_populates="ordered_product", uselist=False, cascade="all, delete-orphan")
-
-class Picked_product(Base):
-    __tablename__ = "picked_products"
-
-
-    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("ordered_products.product_id"), primary_key=True)
-    price: Mapped[float] = mapped_column(DECIMAL(10, 2))
-    name: Mapped[str] = mapped_column(String)
-
-    # товар->заказ-товар
-    ordered_product = relationship("Ordered_product", back_populates="picked_product", uselist=False)
+#     picked_product = relationship("Picked_product", back_populates="ordered_product", uselist=False, cascade="all, delete-orphan")
+#
+# class Picked_product(Base):
+#     __tablename__ = "picked_products"
+#
+#
+#     product_id: Mapped[int] = mapped_column(Integer, ForeignKey("ordered_products.product_id"), primary_key=True)
+#     price: Mapped[float] = mapped_column(DECIMAL(10, 2))
+#     name: Mapped[str] = mapped_column(String)
+#
+#     # товар->заказ-товар
+#     ordered_product = relationship("Ordered_product", back_populates="picked_product", uselist=False)
