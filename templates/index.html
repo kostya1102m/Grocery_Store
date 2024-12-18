@@ -29,8 +29,6 @@
                 <button type="submit" form="roleForm" class="btn btn-primary mt-3 w-100">Выбрать роль</button>
             </div>
         </div>
-
-        <!-- Дополнительная форма для покупателя -->
         <div id="buyerForm" style="display:none;" class="mt-5">
 
             <h3 class="text-center">Заполнение данных покупателя</h3>
@@ -57,25 +55,6 @@
     </div>
 </body>
 </html>
-<!--<script>-->
-<!--    $(document).ready(function() {-->
-<!--        $('#roleForm').on('submit', function(e) {-->
-<!--            e.preventDefault();-->
-<!--            -->
-<!--            var role = $('input[name="role"]:checked').val();-->
-<!--            -->
-<!--            if (role === 'buyer') {-->
-<!--                $('#buyerForm').show();-->
-<!--                $('.btn-primary').hide();-->
-<!--                $('.justify-content-center').hide();-->
-<!--            } else {-->
-<!--                // Обработка для менеджера-->
-<!--                alert('Роль менеджера не реализована');-->
-<!--            }-->
-<!--        });-->
-<!--    });-->
-
-<!--</script>-->
 <script>
     $(document).ready(function() {
         $('#roleForm').on('submit', function(e) {
@@ -89,7 +68,7 @@
                 $('.justify-content-center').hide();
             } else if (role === 'manager') {
                 // Перенаправление на страницу для менеджера
-                window.location.href = 'http://127.0.0.1:8000/docs';
+                window.location.href = 'http://127.0.0.1:7000/docs';
             }
         });
     });
