@@ -12,25 +12,20 @@ async function read_customer_to_db() {
         'patrynomic': patrynomic
     }
     try {
-    const response = await axios.post('/user/', data);
+        const response = await axios.post('http://127.0.0.1:7000/user/', data);
 
-    if (response.status === 200 || response.status === 205) {
-        window.location.href = '/customer_page/';
-        alert('Успешный вход');
+        if (response.status === 200) {
+            // Предполагается, что сервер возвращает JWT-токен
+            const token = response.data.token; // Убедитесь, что сервер возвращает токен
+
+            // Сохранение токена в localStorage или sessionStorage
+            localStorage.setItem('jwt_token', token);
+
+            // Перенаправление на страницу customer.html
+            window.location.href = 'http://127.0.0.1:8015/customer.html';
+        }
+    } catch (error) {
+        console.error('Ошибка при добавлении пользователя:', error);
+        alert('Не удалось добавить пользователя. Пожалуйста, проверьте введенные данные.');
     }
-} catch (error) {
-    // Обработка ошибок запроса
-    if (error.response) {
-        // Запрос был сделан, и сервер ответил с кодом состояния, который выходит за пределы 2xx
-        alert(error.response.data.detail || 'Что-то пошло не так');
-    } else if (error.request) {
-        // Запрос был сделан, но ответа не было
-        alert('Нет ответа от сервера');
-    } else {
-        // Что-то произошло при настройке запроса
-        alert('Ошибка: ' + error.message);
-    }
-}
-
-
 }
