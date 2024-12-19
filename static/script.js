@@ -1,3 +1,31 @@
+// Функция для проверки состояния пользователя
+async function checkUser() {
+    const token = localStorage.getItem('jwt_token');
+    if (token) {
+        alert(`Токен найден: ${token}`);
+        try {
+            const response = await axios.get('http://127.0.0.1:8080/user/me/', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.status === 200) {
+                alert('Вы вошли как ' + response.data.first_name + ' ' + response.data.last_name);
+            } else {
+                alert(`Ошибка авторизации: ${response.status} ${response.statusText}`);
+            }
+        } catch (error) {
+            if (error.response) {
+                alert(`Ошибка авторизации: ${error.response.status} ${error.response.statusText}`);
+            } else {
+                alert('Ошибка сети: ' + error.message);
+            }
+        }
+    } else {
+        alert('Токен не найден');
+    }
+}
+
 async function read_customer_to_db() {
 
     const phone = document.getElementById("phone").value;
@@ -11,21 +39,18 @@ async function read_customer_to_db() {
         'last_name': last_name,
         'patrynomic': patrynomic
     }
-    try {
-        const response = await axios.post('http://127.0.0.1:7000/user/', data);
-
-        if (response.status === 200) {
-            // Предполагается, что сервер возвращает JWT-токен
-            const token = response.data.token; // Убедитесь, что сервер возвращает токен
-
-            // Сохранение токена в localStorage или sessionStorage
+    alert(`Собрал`)
+   try {
+        const res = await axios.post(`http://127.0.0.1:8080/user/create`, data);
+        if (res.status === 201) {
+            const token = res.data.token;
             localStorage.setItem('jwt_token', token);
-
-            // Перенаправление на страницу customer.html
-            window.location.href = 'http://127.0.0.1:8015/customer.html';
+            window.location.href = `http://127.0.0.1:8080/user/customer_page/`;
+        } else {
+            alert(`Ошибка: ${res.status} ${res.statusText}`);
         }
     } catch (error) {
-        console.error('Ошибка при добавлении пользователя:', error);
-        alert('Не удалось добавить пользователя. Пожалуйста, проверьте введенные данные.');
+        alert(error.response ? error.response.data.detail : error.message);
     }
+
 }
