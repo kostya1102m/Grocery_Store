@@ -32,7 +32,7 @@
         <div id="buyerForm" style="display:none;" class="mt-5">
 
             <h3 class="text-center">Заполнение данных покупателя</h3>
-            <form action="/" method="get">
+            <form>
                 <div class="form-group">
                     <label for="last_name">Фамилия:</label>
                     <input type="text" value="Mikhailova" class="form-control" id="last_name" name="last_name" required>
@@ -49,7 +49,7 @@
                     <label for="phone">Номер телефона:</label>
                     <input type="tel" value="89148246057" class="form-control" id="phone" name="phone" required>
                 </div>
-                <button onclick="read_customer_to_db()" type="submit" class="btn btn-success w-100">Отправить данные</button>
+                <button type="submit" class="btn btn-success w-100">Отправить данные</button>
             </form>
         </div>
     </div>
@@ -68,8 +68,14 @@
                 $('.justify-content-center').hide();
             } else if (role === 'manager') {
                 // Перенаправление на страницу для менеджера
-                window.location.href = 'http://127.0.0.1:7000/docs';
+                window.location.href = 'http://127.0.0.1:8080/docs';
             }
         });
     });
+    $(document).ready(function() {
+        $('#buyerForm').on('submit', function(e) {
+            e.preventDefault();
+            read_customer_to_db();
+        });
+    })
 </script>
