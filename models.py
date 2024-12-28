@@ -4,6 +4,7 @@ from sqlalchemy.dialects.mysql import DECIMAL
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from database import Base
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -15,6 +16,7 @@ class User(Base):
     # Связь покупатель->заказ один ко многим
     order = relationship("Order", back_populates="user", cascade="all, delete-orphan")
 
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -24,6 +26,7 @@ class Product(Base):
     quantity: Mapped[int] = mapped_column(Integer)
 
     ordered_products = relationship("Ordered_product", back_populates="product", uselist=True)
+
 
 class Order(Base):
     __tablename__ = "orders"
@@ -38,13 +41,15 @@ class Order(Base):
     user = relationship("User", back_populates="order")
 
     # Связь заказ->заказ-товар, один ко многим
-    ordered_products = relationship("Ordered_product", back_populates="order", uselist=True)
+    ordered_products = relationship("Ordered_product", back_populates="order", uselist=True,
+                                    cascade="all, delete-orphan")
+
 
 class Ordered_product(Base):
     __tablename__ = "ordered_products"
 
     order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"))
-    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("products.id"),unique=True)
+    product_id: Mapped[int] = mapped_column(Integer, ForeignKey("products.id"))
     chosen_quantity: Mapped[int] = mapped_column(Integer)
 
     __table_args__ = (
@@ -55,18 +60,3 @@ class Ordered_product(Base):
     order = relationship("Order", back_populates="ordered_products")
     # Связь заказ-товар->товар многие к одному
     product = relationship("Product", back_populates="ordered_products")
-
-
-    # Связь заказ-товар->товар один ко одному
-#     picked_product = relationship("Picked_product", back_populates="ordered_product", uselist=False, cascade="all, delete-orphan")
-#
-# class Picked_product(Base):
-#     __tablename__ = "picked_products"
-#
-#
-#     product_id: Mapped[int] = mapped_column(Integer, ForeignKey("ordered_products.product_id"), primary_key=True)
-#     price: Mapped[float] = mapped_column(DECIMAL(10, 2))
-#     name: Mapped[str] = mapped_column(String)
-#
-#     # товар->заказ-товар
-#     ordered_product = relationship("Ordered_product", back_populates="picked_product", uselist=False)
