@@ -7,7 +7,7 @@ DATABASE_URL = settings.get_db_url()
 engine = create_async_engine(url=DATABASE_URL, echo=True)
 
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
-# Базовый класс для всех моделей
+
+
 class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
-
