@@ -1,10 +1,9 @@
-
-from datetime import datetime
+from typing import List
 from pydantic import BaseModel, Field, field_validator
 
 
 class UserCreate(BaseModel):
-    phone: str =  Field(..., min_length=11, max_length=11)
+    phone: str = Field(..., min_length=11, max_length=11)
     first_name: str = Field(..., min_length=2, max_length=15)
     last_name: str = Field(..., min_length=2, max_length=15)
     patrynomic: str = Field(..., min_length=2, max_length=15)
@@ -24,26 +23,19 @@ class UserCreate(BaseModel):
                 "Фамилия, имя и отчество должны начинаться с заглавной буквы, содержать только буквы и не содержать другие прописные буквы.")
         return v
 
+
 class ProductCreate(BaseModel):
     id: int = Field(..., gt=0)
     name: str = Field(..., min_length=2, max_length=15)
     price: float = Field(..., gt=0)
     quantity: int = Field(..., gt=0)
 
-class OrderCreate(BaseModel):
-    id: int
-    customer_phone: str = Field(..., min_length=11, max_length=11)
-    customer_name: str = Field(..., min_length=2, max_length=15)
-    date: datetime = Field(default_factory=datetime.now)
-    total: float = Field(..., gt=0)
 
-class OrderedProductCreate(BaseModel):
-    order_id: int = Field(..., gt=0)
-    product_id: int = Field(..., gt=0)
-    chosen_quantity: int = Field(..., gt=0)
+class OrderItem(BaseModel):
+    product_id: int
+    chosen_quantity: int
 
-class PickedProductCreate(BaseModel):
-    product_id: int = Field(..., gt=0)
-    price: float = Field(..., gt=0)
-    name: str = Field(..., min_length=2, max_length=15)
 
+class OrderRequest(BaseModel):
+    token: str
+    quantities: List[OrderItem]
