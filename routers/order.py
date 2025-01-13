@@ -5,45 +5,44 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from jose import jwt
-from starlette.responses import JSONResponse
+from starlette.requests import Request
+from starlette.responses import JSONResponse, HTMLResponse
 from datetime import datetime
 
 from config import settings
-from models import Order, User, Product, Ordered_product
-from routers.utils import get_items, get_db, delete_object
-from routers.token import ALGORITHM
-from schemas import OrderRequest
+from models.tables import Order, User, Product, Ordered_product
+from utils import get_items, get_db, delete_object, templates
+from services.token import ALGORITHM, verify_manager_role
+from models.schemas import OrderRequest
 
 router = APIRouter(
-    prefix="/order",
+    prefix="/orders",
     tags=["Order"],
 )
 
 
-@router.get("/")
+@router.get("/", dependencies=[Depends(verify_manager_role)])
 async def get_orders(session: AsyncSession = Depends(get_db)):
     return await get_items(Order, session)
 
 
-@router.get("/{user_phone}")
+@router.get("/{user_phone}", dependencies=[Depends(verify_manager_role)])
 async def get_user_orders(user_phone: str, session: AsyncSession = Depends(get_db)):
     try:
         user = await session.execute(select(User).where(User.phone == user_phone))
         user = user.scalars().first()
 
         if user is None:
-            logger.exception(f"Пользователь с номером: {user_phone} не найден")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователя с таким номером нет")
 
         orders = await session.execute(select(Order).where(Order.customer_phone == user.phone))
         orders = orders.scalars().all()
         return orders
-    except IntegrityError as e:
-        logger.error(f"Произошла непредвиденная ошибка: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Произошла непредвиденная ошибка")
+    except IntegrityError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка сервера")
 
 
-@router.get("/{order_id}")
+@router.get("/order/id/{order_id}", dependencies=[Depends(verify_manager_role)])
 async def get_order_by_id(order_id: int, session: AsyncSession = Depends(get_db)):
     try:
         order = await session.execute(select(Order).where(Order.id == order_id))
@@ -53,20 +52,19 @@ async def get_order_by_id(order_id: int, session: AsyncSession = Depends(get_db)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказ с таким id не существует")
 
         return order
-    except IntegrityError as e:
-        logger.exception(f"Произошла непредвиденная ошибка: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Внутренняя ошибка сервера")
+    except IntegrityError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка сервера")
 
 
-@router.get("/report/{phone}")
-async def create_user_report(phone: str, session: AsyncSession = Depends(get_db)):
+@router.get("/order/report/{phone}", response_class=HTMLResponse)
+async def create_user_report(phone: str, request: Request, session: AsyncSession = Depends(get_db)):
     try:
         user = await session.execute(select(User).where(User.phone == phone))
         user = user.scalars().first()
 
         if user is None:
             logger.info(f"Пользователь с номером: {phone} не найден")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователя с таким номером нет")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Пользователя с номером {phone} нет")
 
         orders_query = select(Order).where(Order.customer_phone == user.phone)
         orders = (await session.execute(orders_query)).scalars().all()
@@ -94,20 +92,18 @@ async def create_user_report(phone: str, session: AsyncSession = Depends(get_db)
         report = {
             "ФИО": f"{user.last_name} {user.first_name} {user.patrynomic}",
             "Всего заказов": total_orders,
-            "Средний чек": float(average_check) if total_orders > 0 else 0,
-            "Общая сумма покупок": float(total_revenue),
+            "Средний чек": round(float(average_check), 2) if total_orders > 0 else 0,
+            "Общая сумма покупок": round(float(total_revenue), 2),
             "Часто покупаемый продукт": most_popular_product_name
         }
+        return templates.TemplateResponse("report.html", {"request": request, "report": report})
+        # return JSONResponse(status_code=status.HTTP_200_OK, content=report)
 
-        return JSONResponse(status_code=status.HTTP_200_OK, content=report)
-
-    except IntegrityError as e:
-        logger.exception(f"Произошла непредвиденная ошибка: {e}")
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            content={"detail": "Внутренняя ошибка сервера"})
+    except IntegrityError:
+        return HTTPException(status_code = status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка сервера. Не удалось сформировать отчёт")
 
 
-@router.get("/report/from/{from_date}/to/{to_date}")
+@router.get("/order/report/from/{from_date}/to/{to_date}", dependencies=[Depends(verify_manager_role)])
 async def create_report_from_date_to_date(from_date: str, to_date: str, session: AsyncSession = Depends(get_db)):
     try:
         from_date_dt = datetime.strptime(from_date, '%Y-%m-%d %H:%M:%S.%f')
@@ -140,22 +136,22 @@ async def create_report_from_date_to_date(from_date: str, to_date: str, session:
         report = {
             "Период": f"{from_date} - {to_date}",
             "Всего заказов": total_orders,
-            "Общая сумма покупок": float(total_revenue),
-            "Средний чек": float(average_check),
+            "Общая сумма покупок": round(float(total_revenue), 2),
+            "Средний чек": round(float(average_check), 2),
             "Самый продаваемый продукт": most_popular_product_name
         }
 
         return JSONResponse(status_code=status.HTTP_200_OK, content=report)
 
     except ValueError:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
-                            content={"error": "Неверный формат даты. Используйте YYYY-MM-DD-HH-MM-SS.ffffff"})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Неверный формат даты. Используйте YYYY-MM-DD-HH-MM-SS.ffffff")
     except IntegrityError:
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            content={"error": "Ошибка соединения с базой данных"})
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                             detail="Ошибка сервера. Не удалось сформировать отчёт")
 
 
-@router.post("/create", status_code=status.HTTP_201_CREATED)
+@router.post("/order/create", status_code=status.HTTP_201_CREATED)
 async def create_order(order_request: OrderRequest, session: AsyncSession = Depends(get_db)):
     if order_request.token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
@@ -219,7 +215,7 @@ async def create_order(order_request: OrderRequest, session: AsyncSession = Depe
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Ошибка при выполнении покупки. Попробуйте снова."
+            detail="Ошибка cервера. Заказ не сформирован."
         )
 
     return JSONResponse(
@@ -233,17 +229,17 @@ async def create_order(order_request: OrderRequest, session: AsyncSession = Depe
     )
 
 
-@router.delete("/remove/{order_id}")
+@router.delete("/order/remove_by_id/{order_id}", dependencies=[Depends(verify_manager_role)])
 async def delete_order(order_id: int, session: AsyncSession = Depends(get_db)):
     order = await delete_object(session, Order, order_id, 'id')
     return JSONResponse(status_code=status.HTTP_200_OK,
-    content={
-        "detail": "Заказ успешно удалён",
-        "order": {
-            "id": order.id,
-            "Имя покупателя": order.customer_name,
-            "Номер покупателя": order.customer_phone,
-            "Дата заказа": order.date,
-            "Общая сумма заказа": float(order.total)
-        }
-    })
+                        content={
+                            "detail": "Заказ успешно удалён",
+                            "order": {
+                                "id": order.id,
+                                "Имя покупателя": order.customer_name,
+                                "Номер покупателя": order.customer_phone,
+                                "Дата заказа": order.date,
+                                "Общая сумма заказа": float(order.total)
+                            }
+                        })
