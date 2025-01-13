@@ -57,25 +57,35 @@
 </html>
 <script>
     $(document).ready(function() {
-        $('#roleForm').on('submit', function(e) {
+        $('#roleForm').on('submit', async function (e) {
             e.preventDefault();
 
             var role = $('input[name="role"]:checked').val();
 
+            const data = {'role': role};
             if (role === 'buyer') {
                 $('#buyerForm').show();
                 $('.btn-primary').hide();
                 $('.justify-content-center').hide();
-            } else if (role === 'manager') {
 
-                window.location.href = 'http://127.0.0.1:8030/docs';
+            } else if (role === 'manager') {
+                try {
+                    const response = await axios.post('/users/user/role', data);
+                    localStorage.setItem('jwt_manager_token', response.data.token);
+                    localStorage.removeItem('jwt_customer_token');
+                    window.location.href = '/docs';
+                } catch (error) {
+                    alert(`Произошла ошибка при выполнении запроса + ${error.response?.data?.detail || error.message}`);
+                }
             }
         });
     });
     $(document).ready(function() {
         $('#buyerForm').on('submit', function(e) {
             e.preventDefault();
-            read_customer_to_db();
+            var role = $('input[name="role"]:checked').val();
+            const data = {'role': role};
+            read_customer_to_db(data);
         });
-    })
+    });
 </script>
