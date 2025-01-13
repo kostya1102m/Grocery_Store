@@ -39,3 +39,10 @@ class OrderItem(BaseModel):
 class OrderRequest(BaseModel):
     token: str
     quantities: List[OrderItem]
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+class RoleRequest(BaseModel):
+    role: str
