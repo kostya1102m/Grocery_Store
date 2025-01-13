@@ -1,5 +1,3 @@
-from venv import logger
-
 from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +5,7 @@ from starlette import status
 from starlette.templating import Jinja2Templates
 
 from database import async_session_maker
-from models import Product, User
+from models.tables import Product, User
 
 
 async def get_db() -> AsyncSession:
@@ -64,7 +62,6 @@ async def update_product_quantity(flag, product_id, quantity, session: AsyncSess
         product.quantity += quantity
     else:
         if product.quantity < quantity:
-            logger.error("Уменьшение количества невозможно, так как указанное превышает текущее количество продукта.")
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                 detail="Уменьшение количества невозможно, так как указанное превышает текущее количество продукта.")
         else:
