@@ -8,69 +8,125 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
-    <script src="/static/script.js"></script>
+    <script src="/static/customer.js"></script>
+    <style>
+        .sort-icon {
+            margin-left: 5px;
+            cursor: pointer;
+
+        }
+
+        .asc::after {
+            content: ' ▲';
+        }
+
+        .desc::after {
+            content: ' ▼';
+        }
+    </style>
 </head>
 <body class="bg-light d-lg-grid">
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-10 p-md-0">
-                <h1 class="text-center mb-4">Выберите продукты</h1>
-                <table class="table table-striped text-center">
-                    <thead>
-                        <tr>
-                            <th>Название</th>
-                            <th>Цена</th>
-                            <th>Количество</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for product in products %}
-                        <tr>
-                            <td>{{ product.name }}</td>
-                            <td>{{ product.price }}</td>
-                            <td>{{ product.quantity }}</td>
-                            <td>
-                                <form class="d-grid row align-items-center pick_quantity_form">
-                                    <input type="hidden" name="product_id" value="{{ product.id }}">
-                                    <div class="m-md-1 w-50">
-                                        <input type="number" class="form-control quantity" name="quantity" min="1" max="{{ product.quantity }}" required>
-                                    </div>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <div class="text-center mt-3">
-                    <button type="button" class="btn btn-primary" id="order_button">Оформить заказ</button>
-                </div>
+<div class="menu">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Главная</a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="reportLink" class="nav-link" href="/">Отчёт по заказам</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 p-md-0">
+            <h1 class="text-center mb-4">Выберите продукты</h1>
+            <table class="table table-striped text-center" id="productTable">
+                <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Название<span class="sort-icon"></span></th>
+                    <th onclick="sortTable(1)">Цена<span class="sort-icon"></span></th>
+                    <th onclick="sortTable(2)">Количество<span class="sort-icon"></span></th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.price }}</td>
+                    <td>{{ product.quantity }}</td>
+                    <td>
+                        <form class="d-grid row align-items-center pick_quantity_form">
+                            <input type="hidden" name="product_id" value="{{ product.id }}">
+                            <div class="m-md-1 w-50">
+                                <input type="number" id="quantity" class="form-control quantity" name="quantity" min="0"
+                                       max="{{ product.quantity }}" value="0" required>
+                                <label id="quantityLabel" for="quantity" style="display: none">Не в наличии</label>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div class="text-center mt-3">
+                <button type="button" onclick="click_order_button()" class="btn btn-primary" id="order_button">Оформить
+                    заказ
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        $(document).ready(function() {
-            checkUser();
+<script>
+    function sortTable(columnIndex) {
+        const table = document.getElementById("productTable");
+        const rows = Array.from(table.rows).slice(1);
+        const isAscending = table.getAttribute('data-order') === 'asc';
+        const directionModifier = isAscending ? 1 : -1;
+
+        rows.sort((a, b) => {
+            const aText = a.cells[columnIndex].textContent.trim();
+            const bText = b.cells[columnIndex].textContent.trim();
+            const aValue = isNaN(aText) ? aText : parseFloat(aText);
+            const bValue = isNaN(bText) ? bText : parseFloat(bText);
+
+            return aValue > bValue ? (1 * directionModifier) : (-1 * directionModifier);
         });
-        $(document).ready(function() {
-            $('#order_button').on('click', function() {
 
-                $('.pick_quantity_form').each(function() {
-                    const quantityInput = $(this).find('input[name="quantity"]');
-                    const quantityValue = parseInt(quantityInput.val());
-                    const maxQuantity = parseInt(quantityInput.attr('max'));
-                    const productName = $(this).closest('tr').find('td:nth-child(1)').text();
+        rows.forEach(row => table.appendChild(row));
+        table.setAttribute('data-order', isAscending ? 'desc' : 'asc');
 
-                    if (quantityValue > maxQuantity) {
-                        alert(`Пожалуйста, введите корректное количество для продукта ${productName}`);
-                        return
-                    }
 
-                });
-                click_order_button();
-            });
-        })
-    </script>
+        updateSortIcons(columnIndex, isAscending);
+    }
+
+    function updateSortIcons(columnIndex, isAscending) {
+        const headers = document.querySelectorAll("#productTable th");
+        headers.forEach((header, index) => {
+            const icon = header.querySelector('.sort-icon');
+            if (icon) {
+                if (index === columnIndex) {
+                    icon.className = 'sort-icon ' + (isAscending ? 'asc' : 'desc');
+                } else {
+                    icon.className = 'sort-icon';
+                }
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        checkUser();
+        initializeQuantityForms();
+        setupNavigation();
+        setupReportLink();
+    });
+</script>
 </body>
 </html>
