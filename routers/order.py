@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, APIRouter
 from loguru import logger
 from sqlalchemy import select, func, text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from jose import jwt
@@ -11,7 +11,7 @@ from datetime import datetime
 
 from config import settings
 from models.tables import Order, User, Product, Ordered_product
-from utils import get_items, get_db, delete_object, templates
+from utils import get_items, get_db, delete_object, customer_templates
 from services.token import ALGORITHM, verify_manager_role
 from models.schemas import OrderRequest
 
@@ -33,7 +33,7 @@ async def get_user_orders(user_phone: str, session: AsyncSession = Depends(get_d
         user = user.scalars().first()
 
         if user is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователя с таким номером нет")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Пользователя с номером {user_phone} нет")
 
         orders = await session.execute(select(Order).where(Order.customer_phone == user.phone))
         orders = orders.scalars().all()
@@ -49,7 +49,7 @@ async def get_order_by_id(order_id: int, session: AsyncSession = Depends(get_db)
         order = order.scalars().first()
 
         if order is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Заказ с таким id не существует")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Заказ с id {order_id} нет")
 
         return order
     except IntegrityError:
@@ -96,7 +96,7 @@ async def create_user_report(phone: str, request: Request, session: AsyncSession
             "Общая сумма покупок": round(float(total_revenue), 2),
             "Часто покупаемый продукт": most_popular_product_name
         }
-        return templates.TemplateResponse("report.html", {"request": request, "report": report})
+        return customer_templates.TemplateResponse("report.html", {"request": request, "report": report})
         # return JSONResponse(status_code=status.HTTP_200_OK, content=report)
 
     except IntegrityError:
@@ -164,7 +164,7 @@ async def create_order(order_request: OrderRequest, session: AsyncSession = Depe
     user = user.scalars().first()
 
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователя с таким номером нет")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Пользователя с номером {phone} нет")
 
     order = Order(
         customer_phone=phone,
@@ -182,7 +182,7 @@ async def create_order(order_request: OrderRequest, session: AsyncSession = Depe
         product = await session.execute(select(Product).where(Product.id == item.product_id))
         product = product.scalars().first()
         if product is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Продукт с таким id не существует.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Продукт с id {item.product_id} не существует.")
 
         if product.quantity < item.chosen_quantity:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Недостаточно товара на складе.")
@@ -229,17 +229,23 @@ async def create_order(order_request: OrderRequest, session: AsyncSession = Depe
     )
 
 
-@router.delete("/order/remove_by_id/{order_id}", dependencies=[Depends(verify_manager_role)])
-async def delete_order(order_id: int, session: AsyncSession = Depends(get_db)):
-    order = await delete_object(session, Order, order_id, 'id')
-    return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={
-                            "detail": "Заказ успешно удалён",
-                            "order": {
-                                "id": order.id,
-                                "Имя покупателя": order.customer_name,
-                                "Номер покупателя": order.customer_phone,
-                                "Дата заказа": order.date,
-                                "Общая сумма заказа": float(order.total)
-                            }
-                        })
+@router.delete("/order/remove_by_id/{id}", dependencies=[Depends(verify_manager_role)])
+async def delete_order(id: int, session: AsyncSession = Depends(get_db)):
+    try:
+        order = await delete_object(session, Order, id, 'id')
+        return JSONResponse(status_code=status.HTTP_200_OK,
+                            content={
+                                "detail": "Заказ успешно удалён",
+                                "order": {
+                                    "id": order.id,
+                                    "Имя покупателя": order.customer_name,
+                                    "Номер покупателя": order.customer_phone,
+                                    "Дата заказа": order.date.strftime("%Y-%m-%d %H:%M:%S.%f"),
+                                    "Общая сумма заказа": float(order.total)
+                                }
+                            })
+    except HTTPException as e:
+        raise e
+    except SQLAlchemyError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Неверный тип данных")
