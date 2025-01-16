@@ -8,12 +8,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
-    <script src="/static/customer.js"></script>
+    <script src="/static/js/customer/customer.js"></script>
     <style>
         .sort-icon {
             margin-left: 5px;
             cursor: pointer;
-
         }
 
         .asc::after {
@@ -22,6 +21,10 @@
 
         .desc::after {
             content: ' ▼';
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
@@ -35,7 +38,7 @@
                         <a class="nav-link" href="/">Главная</a>
                     </li>
                     <li class="nav-item">
-                        <a id="reportLink" class="nav-link" href="/">Отчёт по заказам</a>
+                        <a id="reportLink" class="nav-link" href="">Отчёт по заказам</a>
                     </li>
                 </ul>
             </div>
@@ -75,6 +78,11 @@
                 {% endfor %}
                 </tbody>
             </table>
+            <div>
+                <button onclick="prevPage()">Назад</button>
+                <button onclick="nextPage()">Вперед</button>
+            </div>
+
             <div class="text-center mt-3">
                 <button type="button" onclick="click_order_button()" class="btn btn-primary" id="order_button">Оформить
                     заказ
@@ -85,6 +93,45 @@
 </div>
 
 <script>
+    let currentPage = 1;
+    const rowsPerPage = 5;
+
+    function displayTable() {
+        const tableRows = document.querySelectorAll("#productTable tbody tr");
+        const totalRows = tableRows.length;
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+        // Скрыть все строки
+        tableRows.forEach(row => row.classList.add("hidden"));
+
+        // Определить начальный и конечный индекс
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+
+        // Показать только строки для текущей страницы
+        for (let i = start; i < end && i < totalRows; i++) {
+            tableRows[i].classList.remove("hidden");
+        }
+    }
+
+    function nextPage() {
+        const totalRows = document.querySelectorAll("#productTable tbody tr").length;
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayTable();
+        }
+    }
+
+    function prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            displayTable();
+        }
+    }
+
+    displayTable();
+
     function sortTable(columnIndex) {
         const table = document.getElementById("productTable");
         const rows = Array.from(table.rows).slice(1);
@@ -100,10 +147,16 @@
             return aValue > bValue ? (1 * directionModifier) : (-1 * directionModifier);
         });
 
-        rows.forEach(row => table.appendChild(row));
+        // Удалить все строки из таблицы и добавить отсортированные
+        const tbody = table.querySelector("tbody");
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(row));
+
+        // Сбросить текущую страницу на 1 после сортировки
+        currentPage = 1;
+        displayTable(); // Обновить отображение таблицы
+
         table.setAttribute('data-order', isAscending ? 'desc' : 'asc');
-
-
         updateSortIcons(columnIndex, isAscending);
     }
 
