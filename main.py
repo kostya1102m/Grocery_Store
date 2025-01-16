@@ -15,8 +15,8 @@ app.include_router(user)
 app.include_router(order)
 
 origins = [
-    "http://127.0.0.1:8060"
-    "http://127.0.0.1:8050",
+    "http://127.0.0.1:8065",
+    "http://127.0.0.1:8040"
 ]
 app.add_middleware(
     CORSMiddleware,
