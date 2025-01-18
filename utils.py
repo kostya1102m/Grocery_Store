@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from starlette.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 
 from database import async_session_maker
@@ -56,7 +57,10 @@ async def delete_product_by_id(session: AsyncSession, product_id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Продукт с id {product_id} находится в заказах {orders_id_massive}. Удаление отказано.")
 
-    return await delete_object(session, Product, product_id, "id")
+    await delete_object(session, Product, product_id, "id")
+    return JSONResponse(status_code=status.HTTP_200_OK, content={
+        'detail': f"Продукт с id {product_id} удален."
+    })
 
 
 async def get_items(item_model, session: AsyncSession = Depends(get_db)):
