@@ -28,13 +28,22 @@ class ProductCreate(BaseModel):
     id: int = Field(..., gt=0)
     name: str = Field(..., min_length=2, max_length=15)
     price: float = Field(..., gt=0)
-    quantity: int = Field(..., gt=0)
+    quantity: int = Field(..., ge=0)
 
+    @field_validator('name')
+    @classmethod
+    def name_validator(cls, v):
+        if not v.isalpha() or v == "":
+            raise ValueError("Название продукта должно содержать только буквы")
+        return v
+
+class UpdateProductQuantity(BaseModel):
+    id: int = Field(..., gt=0)
+    quantity: int = Field(..., ge=0)
 
 class OrderItem(BaseModel):
     product_id: int
     chosen_quantity: int
-
 
 class OrderRequest(BaseModel):
     token: str
