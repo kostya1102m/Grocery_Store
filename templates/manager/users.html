@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Менеджер Продуктов и Покупателей</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -46,95 +47,102 @@
     </style>
 </head>
 <body class="bg-light">
-<div class="menu">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Выйти из панели менеджера</a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="productLink" class="nav-link" href="/users/user/manager_page/products">Продукты</a>
-                    </li>
+<header>
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
 
-                    <li class="nav-item">
-                        <a id="customerLink" class="nav-link active" href="#">Покупатели</a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="orderLink" class="nav-link" href="/users/user/manager_page/orders">Заказы</a>
-                    </li>
-                </ul>
-            </div>
+        <div class="d-flex m-4 collapse navbar-collapse" id="navbarNav">
+            <a class=" navbar-brand" href="">Магазин</a>
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a id="productLink" class="nav-link" href="/users/user/manager_page/products">Продукты</a>
+                </li>
+                <li class="nav-item">
+                    <a id="customerLink" class="nav-link active" href="">Покупатели</a>
+                </li>
+                <li class="nav-item">
+                    <a id="orderLink" class="nav-link" href="/users/user/manager_page/orders">Заказы</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Выйти из панели менеджера</a>
+                </li>
+            </ul>
         </div>
     </nav>
-</div>
+</header>
 
-<div class="container mt-5">
+<div class="container">
     <div class="row">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h2 class="section-title">Список покупателей</h2>
-                    <div class="table-responsive">
-                        <table class="table table-striped text-center" id="productTable">
-                            <thead>
-                            <tr>
-                                <th onclick="sortTable(0)">ФИО<span class="sort-icon"></span></th>
-                                <th onclick="sortTable(1)">Номер телефона<span class="sort-icon"></span></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for user in users %}
-                            <tr>
-                                <td>{{ user.last_name + ' ' + user.first_name + ' ' + user.patrynomic }}</td>
-                                <td>{{ user.phone }}</td>
-                            </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                        <div class="d-flex justify-content-between mt-3">
-                            <button class="btn btn-secondary" onclick="prevPage()">Назад</button>
-                            <button class="btn btn-secondary" onclick="nextPage()">Вперед</button>
-                        </div>
+        <div class="col-md-12 card mb-4">
+            <div class="card-body">
+                <h2 class="section-title">Поиск покупателя</h2>
+                <form id="searchCustomerForm" class="mb-4">
+                    <input type="tel" id="searchPhone" class="form-control mb-2"
+                           minlength="11" maxlength="11" placeholder="Номер телефона" required>
+                    <button type="submit" class="btn btn-secondary btn-custom">Поиск</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-md-12 card mb-4">
+            <div class="card-body">
+                <h2 class="section-title"
+                    style="display: flex; justify-content: space-between; align-items: center;">
+                    Список Покупателей <i class="fas fa-sync-alt"
+                                          id="refreshTable"
+                                          style="cursor: pointer;"
+                                          title="Обновить таблицу"></i></h2>
+                <div class="table-responsive">
+                    <table class="table table-striped text-center" id="customerTable">
+                        <thead>
+                        <tr>
+                            <th onclick="sortTable(0)">ФИО<span class="sort-icon"></span></th>
+                            <th onclick="sortTable(1)">Номер телефона<span class="sort-icon"></span></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.last_name + ' ' + user.first_name + ' ' + user.patrynomic }}</td>
+                            <td>{{ user.phone }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="d-flex justify-content-between mt-3">
+                        <button class="btn btn-secondary" onclick="prevPage()">Назад</button>
+                        <button class="btn btn-secondary" onclick="nextPage()">Вперед</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h4 class="section-title">Добавить покупателя</h4>
-                    <form id="addCustomerForm" class="mb-4">
-                        <input type="text" id="fio" class="form-control mb-2" placeholder="ФИО" required>
-                        <input type="tel" id="phone" class="form-control mb-2" placeholder="Номер телефона"
-                               required>
-                        <button type="submit" class="btn btn-primary btn-custom">Добавить покупателя</button>
-                    </form>
-                </div>
+        <div class="col-md-6 card mb-4">
+            <div class="card-body">
+                <h4 class="section-title">Добавить покупателя</h4>
+                <form id="addCustomerForm" class="mb-4">
+                    <input type="text" id="last_name" class="form-control mb-2" placeholder="Фамилия"
+                           minlength="2" maxlength="15" required>
+                    <input type="text" id="first_name" class="form-control mb-2" placeholder="Имя"
+                           minlength="2" maxlength="15"
+                           required>
+                    <input type="text" id="patrynomic" class="form-control mb-2" placeholder="Отчество"
+                           minlength="2" maxlength="15"
+                           required>
+                    <input type="tel" id="phone" class="form-control mb-2" placeholder="Номер телефона"
+                           minlength="11" maxlength="11"
+                           required>
+                    <button type="submit" class="btn btn-primary btn-custom">Добавить покупателя</button>
+                </form>
             </div>
+        </div>
 
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h4 class="section-title">Удалить покупателя</h4>
-                    <form id="deleteProductForm" class="mb-4">
-                        <input type="tel" id="DeletePhone" class="form-control mb-2" placeholder="Номер телефона"
-                               required>
-                        <button type="submit" class="btn btn-danger btn-custom">Удалить покупателя</button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h2 class="section-title">Поиск покупателя</h2>
-                    <form id="searchProductForm" class="mb-4" onsubmit="searchCustomer()">
-                        <input type="tel" id="searchQuery" class="form-control mb-2"
-                               placeholder="Номер телефона" required>
-                        <button type="submit" class="btn btn-secondary btn-custom">Поиск</button>
-                    </form>
-                </div>
+        <div class="col-md-6 card mb-4">
+            <div class="card-body">
+                <h4 class="section-title">Удалить покупателя</h4>
+                <form id="deleteCustomerForm" class="mb-4">
+                    <input type="tel" id="deletePhone" class="form-control mb-2" placeholder="Номер телефона"
+                           minlength="11" maxlength="11" required>
+                    <button type="submit" class="btn btn-danger btn-custom">Удалить покупателя</button>
+                </form>
             </div>
         </div>
     </div>
@@ -144,7 +152,7 @@
     const rowsPerPage = 5;
 
     function displayTable() {
-        const tableRows = document.querySelectorAll("#productTable tbody tr");
+        const tableRows = document.querySelectorAll("#customerTable tbody tr");
         const totalRows = tableRows.length;
         const totalPages = Math.ceil(totalRows / rowsPerPage);
 
@@ -162,7 +170,7 @@
     }
 
     function nextPage() {
-        const totalRows = document.querySelectorAll("#productTable tbody tr").length;
+        const totalRows = document.querySelectorAll("#customerTable tbody tr").length;
         const totalPages = Math.ceil(totalRows / rowsPerPage);
         if (currentPage < totalPages) {
             currentPage++;
@@ -177,10 +185,8 @@
         }
     }
 
-    displayTable();
-
     function sortTable(columnIndex) {
-        const table = document.getElementById("productTable");
+        const table = document.getElementById("customerTable");
         const rows = Array.from(table.rows).slice(1);
         const isAscending = table.getAttribute('data-order') === 'asc';
         const directionModifier = isAscending ? 1 : -1;
@@ -208,7 +214,7 @@
     }
 
     function updateSortIcons(columnIndex, isAscending) {
-        const headers = document.querySelectorAll("#productTable th");
+        const headers = document.querySelectorAll("#customerTable th");
         headers.forEach((header, index) => {
             const icon = header.querySelector('.sort-icon');
             if (icon) {
@@ -221,22 +227,92 @@
         });
     }
 
-    document.getElementById('addCustomerForm').onsubmit = function (event) {
+    document.getElementById('searchCustomerForm').onsubmit = async function (event) {
         event.preventDefault();
-        const fio = document.getElementById('fio').value;
-        const phone = document.getElementById('phone').value;
+        const phone = document.getElementById('searchPhone').value;
 
+        try {
+            const res = await axios.get(`/users/user/${phone}`);
+            const tableRows = document.querySelectorAll("#customerTable tbody tr");
+            tableRows.forEach(row => row.classList.add("hidden"));
+
+            // Найти строку с найденным телефоном и показать её
+            const foundRow = Array.from(tableRows).find(row => row.cells[1].textContent.trim() === phone);
+            if (foundRow) {
+                foundRow.classList.remove("hidden");
+            }
+        } catch (error) {
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
+        }
+    }
+
+    document.getElementById('addCustomerForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const phone = document.getElementById("phone").value;
+        const first_name = document.getElementById("first_name").value;
+        const last_name = document.getElementById("last_name").value;
+        const patrynomic = document.getElementById("patrynomic").value;
+
+        const data = {
+            'phone': phone,
+            'first_name': first_name,
+            'last_name': last_name,
+            'patrynomic': patrynomic,
+        }
+        try {
+            const res = await axios.post(`/users/user/create`, {
+                'user': data
+            });
+            alert(`Покупатель ${first_name} ${last_name} ${patrynomic} с номером ${phone} успешно добавлен в базу данных`)
+
+        } catch (error) {
+            if (error.response.status === 422) {
+                const validatorErrors = error.response.data.detail.map(err => `${err.loc.join('.')} - ${err.msg}`).join('\n');
+                alert(`Ошибка ${error.response.status}: ${validatorErrors}`);
+            } else {
+                alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
+            }
+        }
+        location.reload();
     };
+    document.getElementById('deleteCustomerForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const phone = document.getElementById('deletePhone').value;
 
-    function deleteProduct() {
-        const price = document.getElementById('phone').value;
-
+        try {
+            const res = await axios.delete(`/users/user/remove_by_phone/${phone}`);
+            alert(`Покупатель с номером телефона ${phone} успешно удален из базы данных`)
+        } catch (error) {
+            if (error.response.status === 422) {
+                const validatorErrors = error.response.data.detail.map(err => `${err.loc.join('.')} - ${err.msg}`).join('\n');
+                alert(`Ошибка ${error.response.status}: ${validatorErrors}`);
+            } else {
+                alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
+            }
+        }
+         location.reload();
     }
 
-    function searchProduct() {
-        const phone = document.getElementById('phone').value;
 
+    function setupNavigation() {
+        $('.nav-item a').on('click', function (e) {
+            if ($(this).text() === 'Выйти из панели менеджера') {
+                e.preventDefault();
+                window.location.href = '/';
+                localStorage.removeItem('jwt_manager_token');
+                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+            }
+        });
     }
+
+    document.getElementById('refreshTable').onclick = function () {
+        displayTable();
+    }
+
+    $(document).ready(function () {
+        displayTable();
+        setupNavigation();
+    });
 
 </script>
 </body>
