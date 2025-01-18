@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <title>Менеджер Продуктов и Покупателей</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <script src="/static/js/manager/products.js"></script>
     <style>
         .sort-icon {
             margin-left: 5px;
@@ -46,36 +48,54 @@
     </style>
 </head>
 <body class="bg-light">
-<div class="menu">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Выйти из панели менеджера</a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="productLink" class="nav-link active" href="#">Продукты</a>
-                    </li>
+<header>
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
 
-                    <li class="nav-item">
-                        <a id="customerLink" class="nav-link" href="/users/user/manager_page/users">Покупатели</a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="orderLink" class="nav-link" href="/users/user/manager_page/orders">Заказы</a>
-                    </li>
-                </ul>
-            </div>
+        <div class="d-flex m-4 collapse navbar-collapse" id="navbarNav">
+            <a class=" navbar-brand" href="">Магазин</a>
+            <ul class="navbar-nav ms-sm-5">
+                <li class="nav-item">
+                    <a id="productLink" class="nav-link active" href="">Продукты</a>
+                </li>
+                <li class="nav-item">
+                    <a id="customerLink" class="nav-link" href="/users/user/manager_page/users">Покупатели</a>
+                </li>
+                <li class="nav-item">
+                    <a id="orderLink" class="nav-link" href="/users/user/manager_page/orders">Заказы</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Выйти из панели менеджера</a>
+                </li>
+            </ul>
         </div>
     </nav>
-</div>
+</header>
 
-<div class="container mt-5">
+
+<div class="container">
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-12 card mb-4">
+            <div class="card-body">
+                <h2 class="section-title">Поиск Продукта</h2>
+                <form id="searchProductForm" class="mb-4">
+                    <input type="number" id="searchQuery" class="form-control mb-2"
+                           placeholder="ID продукта" min="1" required>
+                    <button type="submit" class="btn btn-secondary btn-custom">Поиск
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-body">
-                    <h2 class="section-title">Список Продуктов</h2>
+                    <h2 class="section-title"
+                        style="display: flex; justify-content: space-between; align-items: center;">
+                        Список Продуктов
+                        <i class="fas fa-sync-alt"
+                           id="refreshTable"
+                           style="cursor: pointer;"
+                           title="Обновить таблицу"></i>
+                    </h2>
                     <div class="table-responsive">
                         <table class="table table-striped text-center" id="productTable">
                             <thead>
@@ -106,55 +126,50 @@
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h4 class="section-title">Добавить Продукт</h4>
-                    <form id="addProductForm" class="mb-4">
-                        <input type="number" id="AddProductId" class="form-control mb-2" placeholder="ID продукта">
-                        <input type="text" id="productName" class="form-control mb-2" placeholder="Название продукта"
-                               required>
-                        <input type="number" id="productPrice" class="form-control mb-2" placeholder="Цена" required>
-                        <input type="number" id="productQuantity" class="form-control mb-2" placeholder="Количество"
-                               required>
-                        <button type="submit" class="btn btn-primary btn-custom">Добавить продукт</button>
-                    </form>
-                </div>
-            </div>
 
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h4 class="section-title">Удалить продукт</h4>
-                    <form id="deleteProductForm" class="mb-4">
-                        <input type="number" id="DeleteProductId" class="form-control mb-2" placeholder="ID продукта"
-                               required>
-                        <button type="submit" class="btn btn-danger btn-custom">Удалить продукт</button>
-                    </form>
-                </div>
+        <div class="col-md-4 card mb-4">
+            <div class="card-body">
+                <h4 class="section-title">Добавить Продукт</h4>
+                <form id="addProductForm" class="mb-4">
+                    <input type="number" id="productId" class="form-control mb-2" placeholder="ID продукта"
+                           min="1" required>
+                    <input type="text" id="productName" class="form-control mb-2" placeholder="Название продукта"
+                           required>
+                    <input type="number" id="productPrice" class="form-control mb-2" placeholder="Цена" required>
+                    <input type="number" id="productQuantity" class="form-control mb-2" placeholder="Количество"
+                           min="0" required>
+                    <button type="submit" class="btn btn-primary btn-custom">Добавить
+                        продукт
+                    </button>
+                </form>
             </div>
+        </div>
 
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h4 class="section-title">Обновить количество продукта</h4>
-                    <form id="updateProductForm" class="mb-4">
-                        <input type="number" id="productIdUpdate" class="form-control mb-2" placeholder="ID продукта"
-                               required>
-                        <input type="number" id="productQuantityUpdate" class="form-control mb-2"
-                               placeholder="Количество" required>
-                        <button type="submit" class="btn btn-warning btn-custom">Обновить количество</button>
-                    </form>
-                </div>
+        <div class="col-md-4 card mb-4">
+            <div class="card-body">
+                <h4 class="section-title">Удалить продукт</h4>
+                <form id="deleteProductForm" class="mb-4">
+                    <input type="number" id="DeleteProductId" class="form-control mb-2" placeholder="ID продукта"
+                           min="1" required>
+                    <button type="submit" class="btn btn-danger btn-custom">Удалить
+                        продукт
+                    </button>
+                </form>
             </div>
+        </div>
 
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h2 class="section-title">Поиск Продукта</h2>
-                    <form id="searchProductForm" class="mb-4" onsubmit="searchProduct(event)">
-                        <input type="text" id="searchQuery" class="form-control mb-2"
-                               placeholder="Название или ID продукта" required>
-                        <button type="submit" class="btn btn-secondary btn-custom">Поиск</button>
-                    </form>
-                </div>
+        <div class="col-md-4 card mb-4">
+            <div class="card-body">
+                <h4 class="section-title">Обновить количество продукта</h4>
+                <form id="updateProductForm" class="mb-4">
+                    <input type="number" id="productIdUpdate" class="form-control mb-2" placeholder="ID продукта"
+                           min="1" required>
+                    <input type="number" id="productQuantityUpdate" class="form-control mb-2"
+                           min="0" placeholder="Количество" required>
+                    <button type="submit" class="btn btn-warning btn-custom">
+                        Обновить
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -196,8 +211,6 @@
             displayTable();
         }
     }
-
-    displayTable();
 
     function sortTable(columnIndex) {
         const table = document.getElementById("productTable");
@@ -241,30 +254,115 @@
         });
     }
 
-    document.getElementById('addProductForm').onsubmit = function (event) {
+    document.getElementById('addProductForm').onsubmit = async function (event) {
         event.preventDefault();
+        const id = document.getElementById('productId').value;
         const name = document.getElementById('productName').value;
         const price = document.getElementById('productPrice').value;
         const quantity = document.getElementById('productQuantity').value;
-        // Вызов API для добавления продукта
+
+        const data = {
+            'id': id,
+            'name': name,
+            'price': price,
+            'quantity': quantity
+        };
+
+        try {
+            const response = await axios.post(`/products/product/create`, data);
+            alert('Продукт успешно добавлен');
+            location.reload();
+        } catch (error) {
+            if (error.response.status === 422) {
+                const validatorErrors = error.response.data.detail.map(err => `${err.loc.join('.')} - ${err.msg}`).join('\n');
+                alert(`Ошибка ${error.response.status}: ${validatorErrors}`);
+            } else if (error.response.status === 400) {
+                alert(`Ошибка ${error.response.status}: Продукт с ID ${id} уже существует`);
+            } else {
+                alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
+            }
+        }
+    };
+    document.getElementById('deleteProductForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const id = document.getElementById('DeleteProductId').value;
+
+        try {
+            const response = await axios.delete(`/products/product/remove_by_id/${id}`);
+            alert(response.data.detail)
+        } catch (error) {
+            if (error.response.status === 404) {
+                alert(`Ошибка ${error.response.status}: Продукт с ID ${id} не существует`);
+            } else if (error.response.status === 400) {
+                alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
+            } else {
+                alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
+            }
+        }
+        location.reload();
+    };
+    document.getElementById('updateProductForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const id = document.getElementById('productIdUpdate').value;
+        const quantity = document.getElementById('productQuantityUpdate').value;
+
+        try {
+            const response = await axios.put(`/products/product/set_quantity`, {
+                'id': id,
+                'quantity': quantity
+            });
+            alert('Количество продукта успешно обновлено');
+            location.reload();
+        } catch (error) {
+            if (error.response.status === 422) {
+                alert(`Ошибка ${error.response.status}: ID и Количество должны быть целыми неотрицательными числами`);
+            } else if (error.response.status === 404) {
+                alert(`Ошибка ${error.response.status}: Продукт с указанным ID не найден`);
+            } else {
+                alert(`Ошибка при обновлении: ${error.response?.data?.detail || error.message}`);
+            }
+        }
+    };
+    document.getElementById('searchProductForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const id = document.getElementById('searchQuery').value;
+
+        try {
+            const res = await axios.get(`/products/product/${id}`);
+            // alert('Продукт успешно найден');
+            // location.reload();
+            const tableRows = document.querySelectorAll("#productTable tbody tr");
+            tableRows.forEach(row => row.classList.add("hidden"));
+
+            // Найти строку с найденным продуктом и показать её
+            const foundRow = Array.from(tableRows).find(row => row.cells[0].textContent.trim() === id);
+            if (foundRow) {
+                foundRow.classList.remove("hidden");
+            }
+        } catch (error) {
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
+
+        }
     };
 
-    function deleteProduct(productId) {
-        // Вызов API для удаления продукта
+    function setupNavigation() {
+        $('.nav-item a').on('click', function (e) {
+            if ($(this).text() === 'Выйти из панели менеджера') {
+                e.preventDefault();
+                window.location.href = '/';
+                localStorage.removeItem('jwt_manager_token');
+                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+            }
+        });
     }
 
-    function updateProduct(event, productId) {
-        event.preventDefault();
-        const quantity = event.target.quantity.value;
-        // Вызов API для обновления количества продукта
+    document.getElementById('refreshTable').onclick = function () {
+        displayTable();
     }
-
-    function searchProduct(event) {
-        event.preventDefault();
-        const query = document.getElementById('searchQuery').value;
-        // Вызов API для поиска продукта
-    }
-
+    $(document).ready(function () {
+        displayTable();
+        setupNavigation();
+    });
 </script>
 </body>
 </html>
