@@ -36,7 +36,7 @@ async def set_user_role(
 ):
     role = role_request.role
     token = create_access_token(data={"role": role})
-    response.set_cookie(key="token", value=token, httponly=True)
+    response.set_cookie(key="token", value=token)
     return {"token": token}
 
 
