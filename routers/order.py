@@ -11,7 +11,7 @@ from datetime import datetime
 
 from config import settings
 from models.tables import Order, User, Product, Ordered_product
-from utils import get_items, get_db, delete_object, customer_templates
+from utils import get_items, get_db, delete_object, customer_templates, manager_templates
 from services.token import ALGORITHM, verify_manager_role
 from models.schemas import OrderRequest
 
@@ -49,9 +49,11 @@ async def get_order_by_id(order_id: int, session: AsyncSession = Depends(get_db)
         order = order.scalars().first()
 
         if order is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Заказ с id {order_id} нет")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Заказ с id {order_id} не существует")
 
         return order
+    except SQLAlchemyError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Неверный тип данных")
     except IntegrityError:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка сервера")
 
@@ -63,7 +65,6 @@ async def create_user_report(phone: str, request: Request, session: AsyncSession
         user = user.scalars().first()
 
         if user is None:
-            logger.info(f"Пользователь с номером: {phone} не найден")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Пользователя с номером {phone} нет")
 
         orders_query = select(Order).where(Order.customer_phone == user.phone)
@@ -98,20 +99,33 @@ async def create_user_report(phone: str, request: Request, session: AsyncSession
         }
         return customer_templates.TemplateResponse("report.html", {"request": request, "report": report})
         # return JSONResponse(status_code=status.HTTP_200_OK, content=report)
-
+    except SQLAlchemyError:
+        return HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail="Неверный тип данных")
     except IntegrityError:
         return HTTPException(status_code = status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка сервера. Не удалось сформировать отчёт")
 
 
 @router.get("/order/report/from/{from_date}/to/{to_date}", dependencies=[Depends(verify_manager_role)])
-async def create_report_from_date_to_date(from_date: str, to_date: str, session: AsyncSession = Depends(get_db)):
+async def create_report_from_date_to_date(from_date: str, to_date: str, request: Request = None, session: AsyncSession = Depends(get_db)):
     try:
-        from_date_dt = datetime.strptime(from_date, '%Y-%m-%d %H:%M:%S.%f')
-        to_date_dt = datetime.strptime(to_date, '%Y-%m-%d %H:%M:%S.%f')
+        convert_from_date = from_date = from_date.replace("T", " ")
+        convert_from_date += ".000000"
+
+        convert_to_date = to_date = to_date.replace("T", " ")
+        convert_to_date += ".000000"
+
+        from_date_dt = datetime.strptime(convert_from_date, '%Y-%m-%d %H:%M:%S.%f')
+        to_date_dt = datetime.strptime(convert_to_date, '%Y-%m-%d %H:%M:%S.%f')
+
+        # from_date_dt = datetime.strptime(from_date, '%Y-%m-%d %H:%M:%S.%f')
+        # to_date_dt = datetime.strptime(to_date, '%Y-%m-%d %H:%M:%S.%f')
 
         orders_query = (select(Order)
                         .where(Order.date.between(from_date_dt, to_date_dt)))
         orders = (await session.execute(orders_query)).scalars().all()
+
+        if orders is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="В этом периоде заказов нет")
 
         total_orders = len(orders)
         total_revenue = sum(order.total for order in orders) if total_orders > 0 else 0
@@ -134,18 +148,20 @@ async def create_report_from_date_to_date(from_date: str, to_date: str, session:
             most_popular_product_name = (await session.execute(product_query)).scalars().first()
 
         report = {
-            "Период": f"{from_date} - {to_date}",
+            "Период": f"{from_date} по {to_date}",
             "Всего заказов": total_orders,
             "Общая сумма покупок": round(float(total_revenue), 2),
             "Средний чек": round(float(average_check), 2),
             "Самый продаваемый продукт": most_popular_product_name
         }
 
-        return JSONResponse(status_code=status.HTTP_200_OK, content=report)
+        # return JSONResponse(status_code=status.HTTP_200_OK, content=report)
+        return manager_templates.TemplateResponse("period_report.html", {"request": request, "report": report})
+
 
     except ValueError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="Неверный формат даты. Используйте YYYY-MM-DD-HH-MM-SS.ffffff")
+                            detail="Неверный формат даты. Используйте YYYY-MM-DD-HH-MM-SS")
     except IntegrityError:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                              detail="Ошибка сервера. Не удалось сформировать отчёт")
