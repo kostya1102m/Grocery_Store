@@ -143,6 +143,6 @@ async function click_order_button() {
             initializeQuantityForms();
         }
     } catch (error) {
-        alert("Произошла ошибка при выполнении запроса. Пожалуйста, попробуйте позже." + (error.response?.data?.detail || error.message));
+        alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
     }
 }
