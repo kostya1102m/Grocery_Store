@@ -2,8 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Менеджер Продуктов и Покупателей</title>
+    <title>Заказы</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -46,38 +47,63 @@
     </style>
 </head>
 <body class="bg-light">
-<div class="menu">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Выйти из панели менеджера</a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="productLink" class="nav-link" href="/users/user/manager_page/products">Продукты</a>
-                    </li>
+<header>
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
 
-                    <li class="nav-item">
-                        <a id="customerLink" class="nav-link" href="/users/user/manager_page/users">Покупатели</a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="orderLink" class="nav-link active" href="#">Заказы</a>
-                    </li>
-                </ul>
-            </div>
+        <div class="d-flex m-4 collapse navbar-collapse" id="navbarNav">
+            <a class=" navbar-brand" href="">Магазин</a>
+            <ul class="navbar-nav ms-sm-5">
+                <li class="nav-item">
+                    <a id="productLink" class="nav-link" href="/users/user/manager_page/products">Продукты</a>
+                </li>
+                <li class="nav-item">
+                    <a id="customerLink" class="nav-link" href="/users/user/manager_page/users">Покупатели</a>
+                </li>
+                <li class="nav-item">
+                    <a id="orderLink" class="nav-link active" href="">Заказы</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Выйти из панели менеджера</a>
+                </li>
+            </ul>
         </div>
     </nav>
-</div>
+</header>
 
-<div class="container mt-5">
+<div class="container">
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-12 card mb-4">
+            <div class="card-body">
+                <h2 id="searchTitle" class="section-title">Поиск</h2>
+                <form id="searchOrderForm" class="mb-4">
+                    <div class="form-group">
+                        <label for="searchType">Выберите тип поиска:</label>
+                        <select id="searchType" class="form-control mb-2" required>
+                            <option value="orderId">По ID Заказа</option>
+                            <option value="phoneNumber">По номеру телефона</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <input type="number" id="searchOrder" class="form-control mb-2"
+                               placeholder="ID" min="1" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-custom">Поиск</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-body">
-                    <h2 class="section-title">Список заказов</h2>
+                    <h2 class="section-title"
+                        style="display: flex; justify-content: space-between; align-items: center;">
+                        Список Заказов
+                        <i class="fas fa-sync-alt"
+                           id="refreshTable"
+                           style="cursor: pointer;"
+                           title="Обновить таблицу"></i>
+                    </h2>
                     <div class="table-responsive">
-                        <table class="table table-striped text-center" id="productTable">
+                        <table class="table table-striped text-center" id="orderTable">
                             <thead>
                             <tr>
                                 <th onclick="sortTable(0)">ID Заказ<span class="sort-icon"></span></th>
@@ -108,26 +134,45 @@
             </div>
         </div>
 
-        <div class="col-md-4">
-
+        <div class="col-md-4 card mb-4">
+            <div class="card-body">
+                <h4 class="section-title">Удалить заказ</h4>
+                <form id="deleteOrderForm" class="mb-4">
+                    <input type="number" id="deleteOrderId" class="form-control mb-2" placeholder="ID Заказа"
+                           min="1" required>
+                    <button type="submit" class="btn btn-danger btn-custom">Удалить заказ</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-md-8">
             <div class="card mb-4">
                 <div class="card-body">
-                    <h4 class="section-title">Удалить заказ</h4>
-                    <form id="deleteProductForm" class="mb-4">
-                        <input type="text" id="DeleteOrderId" class="form-control mb-2" placeholder="ID Заказа"
-                               required>
-                        <button type="submit" class="btn btn-danger btn-custom">Удалить заказ</button>
+                    <h4 class="section-title">Отчёт о заказах пользователя</h4>
+                    <form id="reportUserOrdersForm" class="mb-4">
+                        <input type="tel" id="reportUserOrdersPhone" class="form-control mb-2"
+                               placeholder="Номер телефона"
+                               minlength="11" maxlength="11" required>
+                        <button type="submit" class="btn btn-success btn-custom">Сформировать</button>
                     </form>
                 </div>
             </div>
-
+        </div>
+        <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-body">
-                    <h2 class="section-title">Поиск заказа</h2>
-                    <form id="searchOrderForm" class="mb-4" onsubmit="searchOrder()">
-                        <input type="text" id="searchQuery" class="form-control mb-2"
-                               placeholder="ID Заказа" required>
-                        <button type="submit" class="btn btn-secondary btn-custom">Поиск</button>
+                    <h4 class="section-title">Отчёт по периоду</h4>
+                    <form id="reportOrdersForm" class="mb-4" method="POST" action="/generate-report">
+                        <div class="form-group">
+                            <label for="startDate">Начальная дата:</label>
+                            <input type="datetime-local" id="startDate" name="start_date" class="form-control" step="1"
+                                   required>
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">Конечная дата:</label>
+                            <input type="datetime-local" id="endDate" name="end_date" class="form-control" step="1"
+                                   required>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-custom">Сформировать</button>
                     </form>
                 </div>
             </div>
@@ -135,11 +180,57 @@
     </div>
 </div>
 <script>
+
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+
+    startDateInput.addEventListener('change', function () {
+        const startDateValue = new Date(startDateInput.value);
+        endDateInput.min = startDateInput.value;
+
+
+        const currentEndDateValue = new Date(endDateInput.value);
+        if (currentEndDateValue <= startDateValue) {
+            endDateInput.value = '';
+        }
+    });
+
+
+    endDateInput.addEventListener('change', function () {
+        const startDateValue = new Date(startDateInput.value);
+        const endDateValue = new Date(endDateInput.value);
+
+
+        if (endDateValue <= startDateValue) {
+            alert("Конечная дата должна быть позже начальной.");
+            endDateInput.value = '';
+        }
+    });
+
+    const searchType = document.getElementById('searchType');
+    const searchOrderInput = document.getElementById('searchOrder');
+
+    searchType.addEventListener('change', function () {
+        if (this.value === 'orderId') {
+            searchOrderInput.type = 'number';
+            searchOrderInput.placeholder = 'ID';
+            searchOrderInput.min = '1';
+            searchOrderInput.minLength = '';
+            searchOrderInput.maxLength = '';
+        } else {
+            searchOrderInput.type = 'tel';
+            searchOrderInput.placeholder = 'Номер телефона';
+            searchOrderInput.min = '';
+            searchOrderInput.minLength = '11';
+            searchOrderInput.maxLength = '11';
+        }
+    });
     let currentPage = 1;
     const rowsPerPage = 5;
 
     function displayTable() {
-        const tableRows = document.querySelectorAll("#productTable tbody tr");
+        const tableRows = document.querySelectorAll("#orderTable tbody tr");
         const totalRows = tableRows.length;
         const totalPages = Math.ceil(totalRows / rowsPerPage);
 
@@ -157,7 +248,7 @@
     }
 
     function nextPage() {
-        const totalRows = document.querySelectorAll("#productTable tbody tr").length;
+        const totalRows = document.querySelectorAll("#orderTable tbody tr").length;
         const totalPages = Math.ceil(totalRows / rowsPerPage);
         if (currentPage < totalPages) {
             currentPage++;
@@ -172,10 +263,8 @@
         }
     }
 
-    displayTable();
-
     function sortTable(columnIndex) {
-        const table = document.getElementById("productTable");
+        const table = document.getElementById("orderTable");
         const rows = Array.from(table.rows).slice(1);
         const isAscending = table.getAttribute('data-order') === 'asc';
         const directionModifier = isAscending ? 1 : -1;
@@ -203,7 +292,7 @@
     }
 
     function updateSortIcons(columnIndex, isAscending) {
-        const headers = document.querySelectorAll("#productTable th");
+        const headers = document.querySelectorAll("#orderTable th");
         headers.forEach((header, index) => {
             const icon = header.querySelector('.sort-icon');
             if (icon) {
@@ -216,16 +305,91 @@
         });
     }
 
-
-    function deleteOrder() {
-        const price = document.getElementById('id').value;
-
+    function setupNavigation() {
+        $('.nav-item a').on('click', function (e) {
+            if ($(this).text() === 'Выйти из панели менеджера') {
+                e.preventDefault();
+                window.location.href = '/';
+                localStorage.removeItem('jwt_manager_token');
+                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+            }
+        });
     }
 
-    function searchProduct() {
-        const phone = document.getElementById('phone').value;
+    document.getElementById('searchOrderForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const searchType = document.getElementById('searchType').value;
+        const searchOrder = document.getElementById('searchOrder').value;
+        const tableRows = document.querySelectorAll("#orderTable tbody tr");
 
+
+        try {
+            if (searchType === 'orderId') {
+                const id = parseInt(searchOrder);
+                const response = await axios.get(`/orders/order/id/${id}`);
+
+
+                tableRows.forEach(row => row.classList.add("hidden"));
+
+                const foundRow = Array.from(tableRows).find(row => row.cells[0].textContent.trim() === searchOrder);
+                if (foundRow) {
+                    foundRow.classList.remove("hidden");
+                }
+            } else {
+                const res = await axios.get(`/orders/${searchOrder}`);
+                tableRows.forEach(row => row.classList.add("hidden"));
+
+                tableRows.forEach(row => {
+                    if (row.cells[2].textContent.trim() === searchOrder) {
+                        row.classList.remove("hidden");
+                    }
+                })
+            }
+        } catch (error) {
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`)
+        }
     }
+    document.getElementById('deleteOrderForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const orderId = document.getElementById('deleteOrderId').value;
+        try {
+            const response = await axios.delete(`/orders/order/remove_by_id/${orderId}`);
+            alert('Заказ успешно удален');
+        } catch (error) {
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`)
+        }
+        location.reload();
+    }
+
+    document.getElementById('reportUserOrdersForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const phone = document.getElementById('reportUserOrdersPhone').value;
+        try {
+            const response = await axios.get(`/orders/order/report/${phone}`);
+            window.location.href = `/orders/order/report/${phone}`;
+        } catch (error) {
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`)
+        }
+    }
+    document.getElementById('reportOrdersForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        try {
+            const response = await axios.get(`/orders/order/report/from/${startDate}/to/${endDate}`);
+            window.location.href = `/orders/order/report/from/${startDate}/to/${endDate}`;
+        } catch (error) {
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`)
+        }
+    }
+
+    document.getElementById('refreshTable').onclick = function () {
+        displayTable();
+    }
+    $(document).ready(function () {
+        displayTable();
+        setupNavigation();
+    });
 </script>
 </body>
 </html>

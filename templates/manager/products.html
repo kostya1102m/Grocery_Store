@@ -2,14 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Менеджер Продуктов и Покупателей</title>
+    <title>Продукты</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
-    <script src="/static/js/manager/products.js"></script>
+    <!--    <script src="/static/js/manager/products.js"></script>-->
     <style>
         .sort-icon {
             margin-left: 5px;
@@ -78,7 +78,7 @@
             <div class="card-body">
                 <h2 class="section-title">Поиск Продукта</h2>
                 <form id="searchProductForm" class="mb-4">
-                    <input type="number" id="searchQuery" class="form-control mb-2"
+                    <input type="number" id="searchProduct" class="form-control mb-2"
                            placeholder="ID продукта" min="1" required>
                     <button type="submit" class="btn btn-secondary btn-custom">Поиск
                     </button>
@@ -325,7 +325,7 @@
     };
     document.getElementById('searchProductForm').onsubmit = async function (event) {
         event.preventDefault();
-        const id = document.getElementById('searchQuery').value;
+        const id = document.getElementById('searchProduct').value;
 
         try {
             const res = await axios.get(`/products/product/${id}`);
