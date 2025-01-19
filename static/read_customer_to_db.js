@@ -23,12 +23,13 @@ async function read_customer_to_db(role) {
             window.location.href = '/users/user/customer_page';
         }
     } catch (error) {
-            if (error.response.status === 422) {
-                const validatorErrors = error.response.data.detail.map(err => `${err.loc.join('.')} - ${err.msg}`).join('\n');
-                alert(`${validatorErrors}`);
-            } else {
-                alert(`Ошибка: ${error.response.status}: ${error.response.statusText} - ${error.response.data.detail}`);
-            }
+        if (error.response.status === 422) {
+            const validatorErrors = error.response.data.detail.map(err => `${err.loc.join('.')} - ${err.msg}`).join('\n');
+            alert(`Ошибка ${error.response.status}: ${validatorErrors}`);
+        } else {
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
+        }
     }
+
 }
 
