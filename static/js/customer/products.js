@@ -1,21 +1,21 @@
-function decodeJWT(token) {
-    try {
-        const parts = token.split('.');
-        if (parts.length !== 3) {
-            throw new Error('Invalid JWT format: Incorrect number of parts.');
-        }
-
-        const payload = parts[1];
-        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (error) {
-        console.error('Error decoding JWT:', error);
-        return null;
-    }
-}
+// function decodeJWT(token) {
+//     try {
+//         const parts = token.split('.');
+//         if (parts.length !== 3) {
+//             throw new Error('Invalid JWT format: Incorrect number of parts.');
+//         }
+//
+//         const payload = parts[1];
+//         const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+//         const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+//             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+//         }).join(''));
+//         return JSON.parse(jsonPayload);
+//     } catch (error) {
+//         console.error('Error decoding JWT:', error);
+//         return null;
+//     }
+// }
 
 async function checkUser() {
     const token = localStorage.getItem('jwt_customer_token');
@@ -52,18 +52,18 @@ function initializeQuantityForms() {
         }
     });
 }
-function setupReportLink() {
-    const token = localStorage.getItem('jwt_customer_token');
-    if (token) {
-        const decodedToken = decodeJWT(token);
-        const userPhone = decodedToken.user_phone;
-        const reportLink = document.getElementById('reportLink');
-        if (reportLink) {
-            reportLink.href = `/orders/order/report/${userPhone}`;
-        }
-    }
-}
-function setupNavigation() {
+// function setupReportLink() {
+//     const token = localStorage.getItem('jwt_customer_token');
+//     if (token) {
+//         const decodedToken = decodeJWT(token);
+//         const userPhone = decodedToken.user_phone;
+//         const reportLink = document.getElementById('reportLink');
+//         if (reportLink) {
+//             reportLink.href = `/orders/order/report/${userPhone}`;
+//         }
+//     }
+// }
+function setupUserNavigation() {
     $('.nav-item a').on('click', function (e) {
         if ($(this).text() === 'Главная') {
             e.preventDefault();
@@ -83,10 +83,10 @@ async function click_order_button() {
         const quantityInput = $(this).find('input[name="quantity"]');
         const quantityValue = parseFloat(quantityInput.val());
         const maxQuantity = parseInt(quantityInput.attr('max'));
-        const productName = $(this).closest('tr').find('td:nth-child(1)').text();
+        const productName = $(this).closest('tr').find('td:nth-child(2)').text();
 
         if (quantityValue > maxQuantity || quantityValue % 1 !== 0 || !Number.isInteger(quantityValue) || quantityValue < 0) {
-            alert(`Пожалуйста, введите корректное количество для продукта ${productName}`);
+            alert(`Пожалуйста, введите корректное количество для товара ${productName}`);
             isValid = false;
             return false;
         }
@@ -101,7 +101,7 @@ async function click_order_button() {
         return;
     }
     if (quantities.length === 0) {
-        alert('Корзина пуста.');
+        alert('Вы ничего не выбрали.');
         return;
     }
     const data = {
@@ -123,7 +123,8 @@ async function click_order_button() {
 
             quantities.forEach(item => {
                 const productRow = $(`tr:has(input[value="${item.product_id}"])`);
-                const quantityCell = productRow.find('td:nth-child(3)');
+                const quantityCell = productRow.find('td:nth-child(4)');
+                console.log(quantityCell.value);
                 const currentQuantity = parseInt(quantityCell.text());
                 const newQuantity = currentQuantity - item.chosen_quantity;
 

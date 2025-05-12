@@ -34,7 +34,7 @@ class ProductCreate(BaseModel):
     @classmethod
     def name_validator(cls, v):
         if not v.isalpha() or v == "":
-            raise ValueError("Название продукта должно содержать только буквы")
+            raise ValueError("Название товара должно содержать только буквы")
         return v
 
 class UpdateProductQuantity(BaseModel):
@@ -55,3 +55,5 @@ class Token(BaseModel):
 
 class RoleRequest(BaseModel):
     role: str
+
+

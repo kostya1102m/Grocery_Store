@@ -8,7 +8,18 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .navbar {
+            border-radius: 0 0 10px 10px;
+        }
+    </style>
 </head>
 <body>
 <div class="menu">
@@ -27,23 +38,58 @@
     </nav>
 </div>
 
-<div class="container mt-5"><h1 class="text-center">Отчёт о заказах покупателя</h1>
-    <div class="card mt-4">
-        <div class="card-body"><h5 class="card-title">ФИО:</h5>
+<div class="container mt-5 mb-5">
+    <h1 class="text-center">Отчёт о заказах покупателя</h1>
+    <div class="card mt-4 p-4">
+        <div class="card-body">
+            <h5 class="card-title" >ФИО:</h5>
             <p class="card-text" id="fullName">{{report["ФИО"]}}</p>
-            <h5 class="card-title">Всего заказов:</h5>
-            <p class="card-text" id="totalOrders"> {{report["Всего заказов"]}}</p>
 
-            <h5 class="card-title">Средний чек:</h5>
+            <h5 class="card-title" >Номер телефона:</h5>
+            <p class="card-text" id="phoneNumber">{{report["Телефон"]}}</p>
+
+            <h5 class="card-title" >Всего заказов:</h5>
+            <p class="card-text" id="totalOrders">{{report["Всего заказов"]}}</p>
+
+            <h5 class="card-title" >Средний чек:</h5>
             <p class="card-text" id="averageCheck">{{report["Средний чек"]}} руб</p>
 
-            <h5 class="card-title">Общая сумма покупок:</h5>
+            <h5 class="card-title" >Общая сумма покупок:</h5>
             <p class="card-text" id="totalRevenue">{{report["Общая сумма покупок"]}} руб</p>
 
-            <h5 class="card-title">Часто покупаемый продукт:</h5>
-            <p class="card-text" id="popularProduct">{{report["Часто покупаемый продукт"]}}</p>
+            <h5 class="card-title" >Часто покупаемый товар:</h5>
+            <p class="card-text" id="popularProduct">{{report["Часто покупаемый товар"]}}</p>
         </div>
     </div>
+    <h1 class="text-center mt-1">История заказов</h1>
+    {% for order in orders %}
+        <div class="card mt-4 p-4">
+            <div class="card-body">
+                <h5 class="card-title" >Заказ №{{order["id"]}} от {{order["date"]}}</h5>
+                <h5 class="card-title">Сумма заказа {{order["total"]}}</h5>
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Название</th>
+                        <th>Цена</th>
+                        <th>Количество</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for product in order["products"] %}
+                        <tr>
+                            <td>{{product.id}}</td>
+                            <td>{{product.name}}</td>
+                            <td>{{product.price}}</td>
+                            <td>{{product.quantity}}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endfor %}
 </div>
 <script>
 </script>

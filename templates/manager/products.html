@@ -2,15 +2,27 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Продукты</title>
+    <title>Товары</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
-    <!--    <script src="/static/js/manager/products.js"></script>-->
+    <script src="/static/js/manager/utils.js"></script>
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "Trebuchet MS", sans-serif;
+        }
+
+        .nav-link {
+            font-size: 20px;
+        }
+
         .sort-icon {
             margin-left: 5px;
             cursor: pointer;
@@ -50,12 +62,11 @@
 <body class="bg-light">
 <header>
     <nav class="navbar navbar-expand-sm navbar-light bg-light">
-
         <div class="d-flex m-4 collapse navbar-collapse" id="navbarNav">
-            <a class=" navbar-brand" href="">Магазин</a>
+            <a class=" navbar-brand font-weight-bold" href="">Магазин</a>
             <ul class="navbar-nav ms-sm-5">
                 <li class="nav-item">
-                    <a id="productLink" class="nav-link active" href="">Продукты</a>
+                    <a id="productLink" class="nav-link active" href="">Товары</a>
                 </li>
                 <li class="nav-item">
                     <a id="customerLink" class="nav-link" href="/users/user/manager_page/users">Покупатели</a>
@@ -72,16 +83,36 @@
 </header>
 
 
-<div class="container">
+<main class="container">
     <div class="row">
+        <!--        <div class="col-md-12 card mb-4">-->
+        <!--            <div class="card-body">-->
+        <!--                <h2 class="section-title">Поиск Продукта</h2>-->
+        <!--                <form id="searchProductForm" class="mb-4">-->
+        <!--                    <input type="number" id="searchProduct" class="form-control mb-2"-->
+        <!--                           placeholder="ID продукта" min="1" required>-->
+        <!--                    <button type="submit" class="btn btn-secondary btn-custom">Поиск-->
+        <!--                    </button>-->
+        <!--                </form>-->
+        <!--            </div>-->
+        <!--        </div>-->
         <div class="col-md-12 card mb-4">
             <div class="card-body">
-                <h2 class="section-title">Поиск Продукта</h2>
+                <h2 id="searchTitle" class="section-title">Поиск</h2>
                 <form id="searchProductForm" class="mb-4">
-                    <input type="number" id="searchProduct" class="form-control mb-2"
-                           placeholder="ID продукта" min="1" required>
-                    <button type="submit" class="btn btn-secondary btn-custom">Поиск
-                    </button>
+                    <div class="form-group">
+                        <label for="searchType">Выберите тип поиска:</label>
+                        <select id="searchType" class="form-control mb-2" required>
+                            <option value="productId">По ID</option>
+                            <option value="productName">По названию</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for ="searchProduct">Значение:</label>
+                        <input type="number" id="searchProduct" class="form-control mb-2"
+                               placeholder="ID" min="1" max="2147483647" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-custom">Поиск</button>
                 </form>
             </div>
         </div>
@@ -90,7 +121,7 @@
                 <div class="card-body">
                     <h2 class="section-title"
                         style="display: flex; justify-content: space-between; align-items: center;">
-                        Список Продуктов
+                        Список товаров
                         <i class="fas fa-sync-alt"
                            id="refreshTable"
                            style="cursor: pointer;"
@@ -100,10 +131,14 @@
                         <table class="table table-striped text-center" id="productTable">
                             <thead>
                             <tr>
-                                <th onclick="sortTable(0)">ID<span class="sort-icon"></span></th>
-                                <th onclick="sortTable(1)">Название<span class="sort-icon"></span></th>
-                                <th onclick="sortTable(2)">Цена<span class="sort-icon"></span></th>
-                                <th onclick="sortTable(3)">Количество<span class="sort-icon"></span></th>
+                                <th onclick="sortTable('productTable',prod_pages,0)">ID<span class="sort-icon"></span>
+                                </th>
+                                <th onclick="sortTable('productTable',prod_pages,1)">Название<span
+                                        class="sort-icon"></span></th>
+                                <th onclick="sortTable('productTable',prod_pages,2)">Цена<span class="sort-icon"></span>
+                                </th>
+                                <th onclick="sortTable('productTable',prod_pages,3)">Количество<span
+                                        class="sort-icon"></span></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -118,28 +153,31 @@
                             </tbody>
                         </table>
                         <div class="d-flex justify-content-between mt-3">
-                            <button class="btn btn-secondary" onclick="prevPage()">Назад</button>
-                            <button class="btn btn-secondary" onclick="nextPage()">Вперед</button>
+                            <button id="prev" class="btn btn-secondary" onclick="prevPage('productTable',prod_pages)">
+                                Назад
+                            </button>
+                            <button id="next" class="btn btn-secondary" onclick="nextPage('productTable',prod_pages)">
+                                Вперед
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-
         <div class="col-md-4 card mb-4">
             <div class="card-body">
-                <h4 class="section-title">Добавить Продукт</h4>
+                <h4 class="section-title">Добавить товар</h4>
                 <form id="addProductForm" class="mb-4">
-                    <input type="number" id="productId" class="form-control mb-2" placeholder="ID продукта"
-                           min="1" required>
-                    <input type="text" id="productName" class="form-control mb-2" placeholder="Название продукта"
-                           required>
-                    <input type="number" id="productPrice" class="form-control mb-2" placeholder="Цена" required>
+                    <input type="number" id="productId" class="form-control mb-2" placeholder="ID товара"
+                           min="1" max="2147483647" required>
+                    <input type="text" id="productName" class="form-control mb-2" placeholder="Название товара"
+                           minlength="2" maxlength="15" required>
+                    <input type="number" id="productPrice" class="form-control mb-2" placeholder="Цена"
+                           min="0.01" step="0.01" required>
                     <input type="number" id="productQuantity" class="form-control mb-2" placeholder="Количество"
-                           min="0" required>
+                           min="0" max="2147483647" required>
                     <button type="submit" class="btn btn-primary btn-custom">Добавить
-                        продукт
+                        товар
                     </button>
                 </form>
             </div>
@@ -147,12 +185,12 @@
 
         <div class="col-md-4 card mb-4">
             <div class="card-body">
-                <h4 class="section-title">Удалить продукт</h4>
+                <h4 class="section-title">Удалить товар</h4>
                 <form id="deleteProductForm" class="mb-4">
-                    <input type="number" id="DeleteProductId" class="form-control mb-2" placeholder="ID продукта"
-                           min="1" required>
+                    <input type="number" id="DeleteProductId" class="form-control mb-2" placeholder="ID товара"
+                           min="1" max="2147483647" required>
                     <button type="submit" class="btn btn-danger btn-custom">Удалить
-                        продукт
+                        товар
                     </button>
                 </form>
             </div>
@@ -160,12 +198,12 @@
 
         <div class="col-md-4 card mb-4">
             <div class="card-body">
-                <h4 class="section-title">Обновить количество продукта</h4>
+                <h4 class="section-title">Обновить количество товара</h4>
                 <form id="updateProductForm" class="mb-4">
-                    <input type="number" id="productIdUpdate" class="form-control mb-2" placeholder="ID продукта"
-                           min="1" required>
+                    <input type="number" id="productIdUpdate" class="form-control mb-2" placeholder="ID товара"
+                           min="1" max="2147483647" required>
                     <input type="number" id="productQuantityUpdate" class="form-control mb-2"
-                           min="0" placeholder="Количество" required>
+                           min="0" placeholder="Количество" max="2147483647" required>
                     <button type="submit" class="btn btn-warning btn-custom">
                         Обновить
                     </button>
@@ -173,86 +211,29 @@
             </div>
         </div>
     </div>
-</div>
+</main>
 <script>
-    let currentPage = 1;
-    const rowsPerPage = 5;
+    let prod_pages = {currentPage: 1, rowsPerPage: 5};
+    const searchType = document.getElementById('searchType');
+    const searchProductInput = document.getElementById('searchProduct');
 
-    function displayTable() {
-        const tableRows = document.querySelectorAll("#productTable tbody tr");
-        const totalRows = tableRows.length;
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-
-        // Скрыть все строки
-        tableRows.forEach(row => row.classList.add("hidden"));
-
-        // Определить начальный и конечный индекс
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-
-        // Показать только строки для текущей страницы
-        for (let i = start; i < end && i < totalRows; i++) {
-            tableRows[i].classList.remove("hidden");
+    searchType.addEventListener('change', function () {
+        if (this.value === 'productId') {
+            searchProductInput.type = 'number';
+            searchProductInput.placeholder = 'ID';
+            searchProductInput.min = '1';
+            searchProductInput.max = '2147483647';
+            searchProductInput.minLength = '';
+            searchProductInput.maxLength = '';
+        } else {
+            searchProductInput.type = 'text';
+            searchProductInput.placeholder = 'Название';
+            searchProductInput.min = '';
+            searchProductInput.max = ''
+            searchProductInput.minLength = '2';
+            searchProductInput.maxLength = '15';
         }
-    }
-
-    function nextPage() {
-        const totalRows = document.querySelectorAll("#productTable tbody tr").length;
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayTable();
-        }
-    }
-
-    function prevPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            displayTable();
-        }
-    }
-
-    function sortTable(columnIndex) {
-        const table = document.getElementById("productTable");
-        const rows = Array.from(table.rows).slice(1);
-        const isAscending = table.getAttribute('data-order') === 'asc';
-        const directionModifier = isAscending ? 1 : -1;
-
-        rows.sort((a, b) => {
-            const aText = a.cells[columnIndex].textContent.trim();
-            const bText = b.cells[columnIndex].textContent.trim();
-            const aValue = isNaN(aText) ? aText : parseFloat(aText);
-            const bValue = isNaN(bText) ? bText : parseFloat(bText);
-
-            return aValue > bValue ? (1 * directionModifier) : (-1 * directionModifier);
-        });
-
-        // Удалить все строки из таблицы и добавить отсортированные
-        const tbody = table.querySelector("tbody");
-        tbody.innerHTML = '';
-        rows.forEach(row => tbody.appendChild(row));
-
-        // Сбросить текущую страницу на 1 после сортировки
-        currentPage = 1;
-        displayTable(); // Обновить отображение таблицы
-
-        table.setAttribute('data-order', isAscending ? 'desc' : 'asc');
-        updateSortIcons(columnIndex, isAscending);
-    }
-
-    function updateSortIcons(columnIndex, isAscending) {
-        const headers = document.querySelectorAll("#productTable th");
-        headers.forEach((header, index) => {
-            const icon = header.querySelector('.sort-icon');
-            if (icon) {
-                if (index === columnIndex) {
-                    icon.className = 'sort-icon ' + (isAscending ? 'asc' : 'desc');
-                } else {
-                    icon.className = 'sort-icon';
-                }
-            }
-        });
-    }
+    });
 
     document.getElementById('addProductForm').onsubmit = async function (event) {
         event.preventDefault();
@@ -270,14 +251,14 @@
 
         try {
             const response = await axios.post(`/products/product/create`, data);
-            alert('Продукт успешно добавлен');
+            alert(response.data.detail);
             location.reload();
         } catch (error) {
             if (error.response.status === 422) {
                 const validatorErrors = error.response.data.detail.map(err => `${err.loc.join('.')} - ${err.msg}`).join('\n');
                 alert(`Ошибка ${error.response.status}: ${validatorErrors}`);
             } else if (error.response.status === 400) {
-                alert(`Ошибка ${error.response.status}: Продукт с ID ${id} уже существует`);
+                alert(`Ошибка ${error.response.status}: Товар с ID ${id} уже существует`);
             } else {
                 alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
             }
@@ -290,16 +271,10 @@
         try {
             const response = await axios.delete(`/products/product/remove_by_id/${id}`);
             alert(response.data.detail)
+            location.reload();
         } catch (error) {
-            if (error.response.status === 404) {
-                alert(`Ошибка ${error.response.status}: Продукт с ID ${id} не существует`);
-            } else if (error.response.status === 400) {
-                alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
-            } else {
-                alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
-            }
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
         }
-        location.reload();
     };
     document.getElementById('updateProductForm').onsubmit = async function (event) {
         event.preventDefault();
@@ -311,33 +286,50 @@
                 'id': id,
                 'quantity': quantity
             });
-            alert('Количество продукта успешно обновлено');
+            alert(response.data.detail);
             location.reload();
         } catch (error) {
-            if (error.response.status === 422) {
-                alert(`Ошибка ${error.response.status}: ID и Количество должны быть целыми неотрицательными числами`);
-            } else if (error.response.status === 404) {
-                alert(`Ошибка ${error.response.status}: Продукт с указанным ID не найден`);
-            } else {
-                alert(`Ошибка при обновлении: ${error.response?.data?.detail || error.message}`);
-            }
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
         }
     };
     document.getElementById('searchProductForm').onsubmit = async function (event) {
         event.preventDefault();
-        const id = document.getElementById('searchProduct').value;
+        const searchType = document.getElementById('searchType').value;
+        const searchProduct = document.getElementById('searchProduct').value;
+        const tableRows = document.querySelectorAll('#productTable tbody tr')
 
+        const prevButton = document.getElementById('prev');
+        const nextButton = document.getElementById('next');
         try {
-            const res = await axios.get(`/products/product/${id}`);
-            // alert('Продукт успешно найден');
-            // location.reload();
-            const tableRows = document.querySelectorAll("#productTable tbody tr");
-            tableRows.forEach(row => row.classList.add("hidden"));
+            if (searchType === 'productId') {
+                const id = parseInt(searchProduct);
+                const res = await axios.get(`/products/product/${id}`);
+                // alert('Продукт успешно найден');
+                // location.reload();
+                const tableRows = document.querySelectorAll("#productTable tbody tr");
+                tableRows.forEach(row => row.classList.add("hidden"));
 
-            // Найти строку с найденным продуктом и показать её
-            const foundRow = Array.from(tableRows).find(row => row.cells[0].textContent.trim() === id);
-            if (foundRow) {
-                foundRow.classList.remove("hidden");
+                // Найти строку с найденным продуктом и показать её
+                const foundRow = Array.from(tableRows).find(row => row.cells[0].textContent.trim() === res.data.id.toString());
+                if (foundRow) {
+                    foundRow.classList.remove("hidden");
+                    prevButton.disabled = true;
+                    nextButton.disabled = true;
+                }
+            } else {
+                const name = searchProduct.toString();
+                console.log(name)
+                const res = await axios.get(`/products/product/name/${name}`);
+
+                tableRows.forEach(row => row.classList.add("hidden"));
+
+                tableRows.forEach(row => {
+                    if (row.cells[1].textContent.trim() === searchProduct) {
+                        row.classList.remove("hidden");
+                        prevButton.disabled = true;
+                        nextButton.disabled = true;
+                    }
+                })
             }
         } catch (error) {
             alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
@@ -345,22 +337,15 @@
         }
     };
 
-    function setupNavigation() {
-        $('.nav-item a').on('click', function (e) {
-            if ($(this).text() === 'Выйти из панели менеджера') {
-                e.preventDefault();
-                window.location.href = '/';
-                localStorage.removeItem('jwt_manager_token');
-                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-            }
-        });
-    }
-
     document.getElementById('refreshTable').onclick = function () {
-        displayTable();
+        displayTable('productTable', prod_pages);
+        const prevButton = document.getElementById('prev')
+        const nextButton = document.getElementById('next')
+        prevButton.disabled = false;
+        nextButton.disabled = false;
     }
     $(document).ready(function () {
-        displayTable();
+        displayTable('productTable', prod_pages);
         setupNavigation();
     });
 </script>

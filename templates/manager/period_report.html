@@ -27,7 +27,9 @@
     </nav>
 </div>
 
-<div class="container mt-5"><h1 class="text-center">Отчёт о заказах с {{report["Период"]}} </h1>
+<div class="container mt-5">
+    <h1 class="text-center">Отчёт о заказах с</h1>
+    <h1 class="text-center">{{report["Период"]}}</h1>
     <div class="card mt-4">
         <div class="card-body">
             <h5 class="card-title">Всего заказов:</h5>
@@ -39,11 +41,42 @@
             <h5 class="card-title">Общая сумма покупок:</h5>
             <p class="card-text" id="totalRevenue">{{report["Общая сумма покупок"]}} руб</p>
 
-            <h5 class="card-title">Самый продаваемый продукт:</h5>
-            <p class="card-text" id="mostSellingProduct">{{report["Самый продаваемый продукт"]}}</p>
+            <h5 class="card-title">Самый продаваемый товар:</h5>
+            <p class="card-text" id="mostSellingProduct">{{report["Самый продаваемый товар"]}}</p>
         </div>
     </div>
+    <h1 class="text-center mt-1">История заказов</h1>
+    {% for order in orders %}
+    <div class="card mt-4 p-4">
+        <div class="card-body">
+            <h5 class="card-title">Заказ №{{order["id"]}} от {{order["date"]}}</h5>
+            <h5 class="card-title">Сумма заказа {{order["total"]}}</h5>
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Цена</th>
+                    <th>Количество</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for product in order["products"] %}
+                <tr>
+                    <td>{{product.id}}</td>
+                    <td>{{product.name}}</td>
+                    <td>{{product.price}}</td>
+                    <td>{{product.quantity}}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
 </div>
+
+
 <script>
 </script>
 </body>

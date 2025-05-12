@@ -9,7 +9,20 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <script src="/static/js/manager/utils.js"></script>
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "Trebuchet MS", sans-serif;
+        }
+
+        .nav-link {
+            font-size: 20px;
+        }
+
         .sort-icon {
             margin-left: 5px;
             cursor: pointer;
@@ -51,10 +64,10 @@
     <nav class="navbar navbar-expand-sm navbar-light bg-light">
 
         <div class="d-flex m-4 collapse navbar-collapse" id="navbarNav">
-            <a class=" navbar-brand" href="">Магазин</a>
+            <a class=" navbar-brand font-weight-bold" href="">Магазин</a>
             <ul class="navbar-nav ms-sm-5">
                 <li class="nav-item">
-                    <a id="productLink" class="nav-link" href="/users/user/manager_page/products">Продукты</a>
+                    <a id="productLink" class="nav-link" href="/users/user/manager_page/products">Товары</a>
                 </li>
                 <li class="nav-item">
                     <a id="customerLink" class="nav-link" href="/users/user/manager_page/users">Покупатели</a>
@@ -84,13 +97,24 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label for="searchOrder">Значение:</label>
                         <input type="number" id="searchOrder" class="form-control mb-2"
-                               placeholder="ID" min="1" required>
+                               placeholder="ID" min="1" max="2147483647" required>
                     </div>
                     <button type="submit" class="btn btn-secondary btn-custom">Поиск</button>
                 </form>
             </div>
         </div>
+        <!--        <div class="col-md-6 card mb-4">-->
+        <!--            <div class="card-body">-->
+        <!--                <h2 class="section-title">История заказа</h2>-->
+        <!--                <form id="historyOrderForm" class="mb-4">-->
+        <!--                    <input type="number" id="historyOrderId" class="form-control mb-2"-->
+        <!--                           min="1" placeholder="ID" required>-->
+        <!--                    <button type="submit" class="btn btn-secondary btn-custom">Перейти</button>-->
+        <!--                </form>-->
+        <!--            </div>-->
+        <!--        </div>-->
         <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-body">
@@ -106,11 +130,16 @@
                         <table class="table table-striped text-center" id="orderTable">
                             <thead>
                             <tr>
-                                <th onclick="sortTable(0)">ID Заказ<span class="sort-icon"></span></th>
-                                <th onclick="sortTable(1)">Имя покупателя<span class="sort-icon"></span></th>
-                                <th onclick="sortTable(2)">Номер телефона покупателя<span class="sort-icon"></span></th>
-                                <th onclick="sortTable(3)">Дата заказа<span class="sort-icon"></span></th>
-                                <th onclick="sortTable(4)">Сумма заказа<span class="sort-icon"></span></th>
+                                <th onclick="sortTable('orderTable',order_pages,0)">ID Заказ<span
+                                        class="sort-icon"></span></th>
+                                <th onclick="sortTable('orderTable',order_pages,1)">Имя покупателя<span
+                                        class="sort-icon"></span></th>
+                                <th onclick="sortTable('orderTable',order_pages,2)">Номер телефона
+                                    покупателя<span class="sort-icon"></span></th>
+                                <th onclick="sortTable('orderTable',order_pages,3)">Дата заказа<span
+                                        class="sort-icon"></span></th>
+                                <th onclick="sortTable('orderTable',order_pages,4)">Сумма заказа<span
+                                        class="sort-icon"></span></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -126,8 +155,12 @@
                             </tbody>
                         </table>
                         <div class="d-flex justify-content-between mt-3">
-                            <button class="btn btn-secondary" onclick="prevPage()">Назад</button>
-                            <button class="btn btn-secondary" onclick="nextPage()">Вперед</button>
+                            <button id="prev" class="btn btn-secondary" onclick="prevPage('orderTable',order_pages)">
+                                Назад
+                            </button>
+                            <button id="next" class="btn btn-secondary" onclick="nextPage('orderTable',order_pages)">
+                                Вперед
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -139,7 +172,7 @@
                 <h4 class="section-title">Удалить заказ</h4>
                 <form id="deleteOrderForm" class="mb-4">
                     <input type="number" id="deleteOrderId" class="form-control mb-2" placeholder="ID Заказа"
-                           min="1" required>
+                           min="1" max="2147483647" required>
                     <button type="submit" class="btn btn-danger btn-custom">Удалить заказ</button>
                 </form>
             </div>
@@ -147,7 +180,7 @@
         <div class="col-md-8">
             <div class="card mb-4">
                 <div class="card-body">
-                    <h4 class="section-title">Отчёт о заказах пользователя</h4>
+                    <h4 class="section-title">Отчёт о заказах покупателя</h4>
                     <form id="reportUserOrdersForm" class="mb-4">
                         <input type="tel" id="reportUserOrdersPhone" class="form-control mb-2"
                                placeholder="Номер телефона"
@@ -160,8 +193,8 @@
         <div class="col-md-12">
             <div class="card mb-4">
                 <div class="card-body">
-                    <h4 class="section-title">Отчёт по периоду</h4>
-                    <form id="reportOrdersForm" class="mb-4" method="POST" action="/generate-report">
+                    <h4 class="section-title">Отчёт о заказах по периоду</h4>
+                    <form id="reportOrdersForm" class="mb-4">
                         <div class="form-group">
                             <label for="startDate">Начальная дата:</label>
                             <input type="datetime-local" id="startDate" name="start_date" class="form-control" step="1"
@@ -180,6 +213,7 @@
     </div>
 </div>
 <script>
+    let order_pages = {currentPage: 1, rowsPerPage: 5};
 
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
@@ -188,25 +222,27 @@
     startDateInput.addEventListener('change', function () {
         const startDateValue = new Date(startDateInput.value);
         endDateInput.min = startDateInput.value;
-
+        console.log(startDateValue)
 
         const currentEndDateValue = new Date(endDateInput.value);
+        console.log(currentEndDateValue);
         if (currentEndDateValue <= startDateValue) {
             endDateInput.value = '';
         }
     });
 
 
-    endDateInput.addEventListener('change', function () {
-        const startDateValue = new Date(startDateInput.value);
-        const endDateValue = new Date(endDateInput.value);
-
-
-        if (endDateValue <= startDateValue) {
-            alert("Конечная дата должна быть позже начальной.");
-            endDateInput.value = '';
-        }
-    });
+    // endDateInput.addEventListener('change', function () {
+    //     const startDateValue = new Date(startDateInput.value);
+    //     const endDateValue = new Date(endDateInput.value);
+    //
+    //     console.log(startDateValue, endDateValue)
+    //
+    //     if (endDateValue <= startDateValue) {
+    //         alert("Конечная дата должна быть позже начальной.");
+    //         endDateInput.value = '';
+    //     }
+    // });
 
     const searchType = document.getElementById('searchType');
     const searchOrderInput = document.getElementById('searchOrder');
@@ -216,105 +252,18 @@
             searchOrderInput.type = 'number';
             searchOrderInput.placeholder = 'ID';
             searchOrderInput.min = '1';
+            searchOrderInput.max = '2147483647';
             searchOrderInput.minLength = '';
             searchOrderInput.maxLength = '';
         } else {
             searchOrderInput.type = 'tel';
             searchOrderInput.placeholder = 'Номер телефона';
             searchOrderInput.min = '';
+            searchOrderInput.max = '';
             searchOrderInput.minLength = '11';
             searchOrderInput.maxLength = '11';
         }
     });
-    let currentPage = 1;
-    const rowsPerPage = 5;
-
-    function displayTable() {
-        const tableRows = document.querySelectorAll("#orderTable tbody tr");
-        const totalRows = tableRows.length;
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-
-        // Скрыть все строки
-        tableRows.forEach(row => row.classList.add("hidden"));
-
-        // Определить начальный и конечный индекс
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-
-        // Показать только строки для текущей страницы
-        for (let i = start; i < end && i < totalRows; i++) {
-            tableRows[i].classList.remove("hidden");
-        }
-    }
-
-    function nextPage() {
-        const totalRows = document.querySelectorAll("#orderTable tbody tr").length;
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayTable();
-        }
-    }
-
-    function prevPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            displayTable();
-        }
-    }
-
-    function sortTable(columnIndex) {
-        const table = document.getElementById("orderTable");
-        const rows = Array.from(table.rows).slice(1);
-        const isAscending = table.getAttribute('data-order') === 'asc';
-        const directionModifier = isAscending ? 1 : -1;
-
-        rows.sort((a, b) => {
-            const aText = a.cells[columnIndex].textContent.trim();
-            const bText = b.cells[columnIndex].textContent.trim();
-            const aValue = isNaN(aText) ? aText : parseFloat(aText);
-            const bValue = isNaN(bText) ? bText : parseFloat(bText);
-
-            return aValue > bValue ? (1 * directionModifier) : (-1 * directionModifier);
-        });
-
-        // Удалить все строки из таблицы и добавить отсортированные
-        const tbody = table.querySelector("tbody");
-        tbody.innerHTML = '';
-        rows.forEach(row => tbody.appendChild(row));
-
-        // Сбросить текущую страницу на 1 после сортировки
-        currentPage = 1;
-        displayTable(); // Обновить отображение таблицы
-
-        table.setAttribute('data-order', isAscending ? 'desc' : 'asc');
-        updateSortIcons(columnIndex, isAscending);
-    }
-
-    function updateSortIcons(columnIndex, isAscending) {
-        const headers = document.querySelectorAll("#orderTable th");
-        headers.forEach((header, index) => {
-            const icon = header.querySelector('.sort-icon');
-            if (icon) {
-                if (index === columnIndex) {
-                    icon.className = 'sort-icon ' + (isAscending ? 'asc' : 'desc');
-                } else {
-                    icon.className = 'sort-icon';
-                }
-            }
-        });
-    }
-
-    function setupNavigation() {
-        $('.nav-item a').on('click', function (e) {
-            if ($(this).text() === 'Выйти из панели менеджера') {
-                e.preventDefault();
-                window.location.href = '/';
-                localStorage.removeItem('jwt_manager_token');
-                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-            }
-        });
-    }
 
     document.getElementById('searchOrderForm').onsubmit = async function (event) {
         event.preventDefault();
@@ -322,18 +271,22 @@
         const searchOrder = document.getElementById('searchOrder').value;
         const tableRows = document.querySelectorAll("#orderTable tbody tr");
 
+        const prevButton = document.getElementById('prev')
+        const nextButton = document.getElementById('next')
 
         try {
             if (searchType === 'orderId') {
                 const id = parseInt(searchOrder);
-                const response = await axios.get(`/orders/order/id/${id}`);
+                const res = await axios.get(`/orders/order/${id}`);
 
 
                 tableRows.forEach(row => row.classList.add("hidden"));
 
-                const foundRow = Array.from(tableRows).find(row => row.cells[0].textContent.trim() === searchOrder);
+                const foundRow = Array.from(tableRows).find(row => row.cells[0].textContent.trim() === res.data.id.toString());
                 if (foundRow) {
                     foundRow.classList.remove("hidden");
+                    prevButton.disabled = true;
+                    nextButton.disabled = true;
                 }
             } else {
                 const res = await axios.get(`/orders/${searchOrder}`);
@@ -342,6 +295,8 @@
                 tableRows.forEach(row => {
                     if (row.cells[2].textContent.trim() === searchOrder) {
                         row.classList.remove("hidden");
+                        prevButton.disabled = true;
+                        nextButton.disabled = true;
                     }
                 })
             }
@@ -354,40 +309,60 @@
         const orderId = document.getElementById('deleteOrderId').value;
         try {
             const response = await axios.delete(`/orders/order/remove_by_id/${orderId}`);
-            alert('Заказ успешно удален');
+            alert(response.data.detail);
+            location.reload();
         } catch (error) {
             alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`)
         }
-        location.reload();
     }
 
     document.getElementById('reportUserOrdersForm').onsubmit = async function (event) {
         event.preventDefault();
         const phone = document.getElementById('reportUserOrdersPhone').value;
         try {
-            const response = await axios.get(`/orders/order/report/${phone}`);
+            await axios.get(`/orders/order/report/${phone}`);
             window.location.href = `/orders/order/report/${phone}`;
         } catch (error) {
             alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`)
         }
     }
+
+    function formatDate(date) {
+        const day = String(date.getDate()).padStart(2, '0'); // Получаем день
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Получаем месяц (месяцы начинаются с 0)
+        const year = date.getFullYear(); // Получаем год
+        const hours = String(date.getHours()).padStart(2, '0'); // Получаем часы
+        const minutes = String(date.getMinutes()).padStart(2, '0'); // Получаем минуты
+        const seconds = String(date.getSeconds()).padStart(2, '0'); // Получаем секунды
+
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`; // Форматируем строку
+    }
+
     document.getElementById('reportOrdersForm').onsubmit = async function (event) {
         event.preventDefault();
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
+        let startDate = new Date(document.getElementById('startDate').value.replace('T', ' ').slice(0, 19));
+        let endDate = new Date(document.getElementById('endDate').value.replace('T', ' ').slice(0, 19));
+        console.log(startDate, endDate);
+        let formattedStartDate = formatDate(startDate);
+        let formattedEndDate = formatDate(endDate);
+        console.log(formattedStartDate, formattedEndDate);
         try {
-            const response = await axios.get(`/orders/order/report/from/${startDate}/to/${endDate}`);
-            window.location.href = `/orders/order/report/from/${startDate}/to/${endDate}`;
+            await axios.get(`/orders/order/report/from/${formattedStartDate}/to/${formattedEndDate}`);
+            window.location.href = `/orders/order/report/from/${formattedStartDate}/to/${formattedEndDate}`;
         } catch (error) {
             alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`)
         }
     }
 
     document.getElementById('refreshTable').onclick = function () {
-        displayTable();
+        displayTable('orderTable', order_pages);
+        const prevButton = document.getElementById('prev')
+        const nextButton = document.getElementById('next')
+        prevButton.disabled = false;
+        nextButton.disabled = false;
     }
     $(document).ready(function () {
-        displayTable();
+        displayTable('orderTable', order_pages);
         setupNavigation();
     });
 </script>

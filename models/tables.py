@@ -1,9 +1,12 @@
 from datetime import datetime
 from sqlalchemy import String, Integer, func, PrimaryKeyConstraint, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.mysql import DECIMAL
-from sqlalchemy.orm import Mapped, relationship, mapped_column
-from database import Base
+from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy.orm import Mapped, relationship, mapped_column, DeclarativeBase
 
+
+class Base(AsyncAttrs, DeclarativeBase):
+    __abstract__ = True
 
 class User(Base):
     __tablename__ = "users"
@@ -12,6 +15,7 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String)
     last_name: Mapped[str] = mapped_column(String)
     patrynomic: Mapped[str] = mapped_column(String)
+
 
     # Связь покупатель->заказ один ко многим
     order = relationship("Order", back_populates="user", cascade="all, delete-orphan")

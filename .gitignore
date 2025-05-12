@@ -1,5 +1,5 @@
-/venv
+/.venv
 /.env
-/secret.py
 /.idea
 /__pycache__
+/requirements.txt

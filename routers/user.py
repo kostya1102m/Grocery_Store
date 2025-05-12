@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, APIRouter
 from pydantic import ValidationError
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError, DBAPIError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.requests import Request
@@ -109,14 +109,20 @@ async def get_customer_by_phone(
         user = await session.execute(select(User).where(User.phone == phone))
         user = user.scalars().first()
         if user is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Покупателя с номером {phone} не существует.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Покупатель с номером: {phone} не найден.")
         return user
+
+    except HTTPException as NotFound:
+        raise NotFound
+
     except SQLAlchemyError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Неверный тип данных")
-    except DBAPIError:
+                            detail=f"Необрабатываемое значение: {phone}.")
+
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"Ошибка сервера. Не удалось получить продукт.")
+                            detail=f"Ошибка сервера. Не удалось найти пользователя: {e}")
+
 
 
 @router.post("/user/create", status_code=status.HTTP_201_CREATED)
@@ -145,7 +151,15 @@ async def create_user(
             response.set_cookie(key="token", value=access_token)
             return Token(access_token=access_token)
         else:
-            return user_data
+            return JSONResponse(status_code=status.HTTP_200_OK, content={
+                "detail": "Покупатель успешно добавлен в базу данных",
+                "user": {
+                    "last_name": user_data.last_name,
+                    "first_name": user_data.first_name,
+                    "patrynomic": user_data.patrynomic,
+                    "phone": user_data.phone
+                }
+            })
 
 
     except ValidationError as e:
@@ -153,7 +167,7 @@ async def create_user(
                             detail=e.errors())
     except IntegrityError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Пользователь с номером {user.phone} уже существует")
+                            detail=f"Покупатель с номером: {user.phone} уже существует")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=str(e))
@@ -164,13 +178,24 @@ async def delete_user(
         phone: str,
         session: AsyncSession = Depends(get_db)
 ):
-    user = await delete_object(session, User, phone, 'phone')
-    report = {
-        "detail": "User  deleted successfully",
-        "user": {
-            "last_name": user.last_name,
-            "first_name": user.first_name,
-            "patronymic": user.patrynomic
+    try:
+        user = await delete_object(session, User, phone, 'phone')
+        report = {
+            "detail": "Покупатель успешно удалён из базы данных",
+            "user": {
+                "last_name": user.last_name,
+                "first_name": user.first_name,
+                "patrynomic": user.patrynomic,
+                "phone": user.phone
+            }
         }
-    }
-    return JSONResponse(status_code=status.HTTP_200_OK, content=report)
+        return JSONResponse(status_code=status.HTTP_200_OK, content=report)
+    except HTTPException as NotFound:
+        raise NotFound
+
+    except SQLAlchemyError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Необрабатываемое значение: {phone}.")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=str(e))

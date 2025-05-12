@@ -2,14 +2,28 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Продукты</title>
+    <title>Товары</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
     <script src="/static/js/customer/products.js"></script>
+    <script src="/static/js/manager/utils.js"></script>
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "Trebuchet MS", sans-serif;
+        }
+
+        .nav-link {
+            font-size: 20px;
+        }
+
         .sort-icon {
             margin-left: 5px;
             cursor: pointer;
@@ -26,41 +40,74 @@
         .hidden {
             display: none;
         }
+
+        .card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
     </style>
 </head>
-<body class="bg-light d-lg-grid">
-<div class="menu">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Главная</a>
-                    </li>
-                    <li class="nav-item">
-                        <a id="reportLink" class="nav-link" href="">Отчёт по заказам</a>
-                    </li>
-                </ul>
-            </div>
+<body class="bg-light">
+<header>
+    <nav class="navbar navbar-expand-sm navbar-light bg-light">
+
+        <div class="justify-content-center d-flex m-4 collapse navbar-collapse" id="navbarNav">
+            <a class=" navbar-brand font-weight-bold" href="">Магазин</a>
+            <ul class="navbar-nav ms-sm-5">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Главная</a>
+                </li>
+                <!--                <li class="nav-item">-->
+                <!--                    <a id="reportLink" class="nav-link" href="">Отчёт по заказам</a>-->
+                <!--                </li>-->
+            </ul>
         </div>
     </nav>
-</div>
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-10 p-md-0">
-            <h1 class="text-center mb-4">Выберите продукты</h1>
-            <table class="table table-striped text-center" id="productTable">
+</header>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12 card mb-4">
+            <div class="card-body">
+                <h2 id="searchTitle" class="section-title">Поиск</h2>
+                <form id="searchProductForm" class="mb-4">
+                    <div class="form-group">
+                        <label for="searchType">Выберите тип поиска:</label>
+                        <select id="searchType" class="form-control mb-2" required>
+                            <option value="productId">По ID</option>
+                            <option value="productName">По названию</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for ="searchProduct">Значение:</label>
+                        <input type="number" id="searchProduct" class="form-control mb-2"
+                               placeholder="ID" min="1" max="2147483647" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-custom">Поиск</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-md-12 card mb-4">
+            <h1 class="text-center mb-4">Выберите товары <i class="fas fa-sync-alt"
+                                                              id="refreshTable"
+                                                              style="cursor: pointer;"
+                                                              title="Обновить таблицу"></i></h1>
+            <table class="table table-striped text-center" id="productUserTable">
                 <thead>
                 <tr>
-                    <th onclick="sortTable(0)">Название<span class="sort-icon"></span></th>
-                    <th onclick="sortTable(1)">Цена<span class="sort-icon"></span></th>
-                    <th onclick="sortTable(2)">Количество<span class="sort-icon"></span></th>
+                    <th onclick="sortTable('productUserTable',user_pages, 0)">ID<span class="sort-icon"></span></th>
+                    <th onclick="sortTable('productUserTable',user_pages, 1)">Название<span class="sort-icon"></span>
+                    </th>
+                    <th onclick="sortTable('productUserTable',user_pages, 2)">Цена<span class="sort-icon"></span></th>
+                    <th onclick="sortTable('productUserTable',user_pages, 3)">Количество<span class="sort-icon"></span>
+                    </th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
                 {% for product in products %}
                 <tr>
+                    <td>{{ product.id }}</td>
                     <td>{{ product.name }}</td>
                     <td>{{ product.price }}</td>
                     <td>{{ product.quantity }}</td>
@@ -78,107 +125,108 @@
                 {% endfor %}
                 </tbody>
             </table>
-            <div>
-                <button onclick="prevPage()">Назад</button>
-                <button onclick="nextPage()">Вперед</button>
-            </div>
-
-            <div class="text-center mt-3">
-                <button type="button" onclick="click_order_button()" class="btn btn-primary" id="order_button">Оформить
-                    заказ
+            <div class="d-flex justify-content-between mt-1 mb-3">
+                <button id="prev" class="btn btn-secondary" onclick="prevPage('productUserTable',user_pages)">Назад
+                </button>
+                <div class="text-center">
+                    <button type="button" onclick="click_order_button()" class="btn btn-primary" id="order_button">
+                        Оформить
+                        заказ
+                    </button>
+                </div>
+                <button id="next" class="btn btn-secondary" onclick="nextPage('productUserTable',user_pages)">Вперед
                 </button>
             </div>
+
         </div>
     </div>
 </div>
 
 <script>
-    let currentPage = 1;
-    const rowsPerPage = 5;
 
-    function displayTable() {
-        const tableRows = document.querySelectorAll("#productTable tbody tr");
-        const totalRows = tableRows.length;
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
+    let user_pages = {
+        currentPage: 1,
+        rowsPerPage: 5
+    }
 
-        // Скрыть все строки
-        tableRows.forEach(row => row.classList.add("hidden"));
+    const searchType = document.getElementById('searchType');
+    const searchProductInput = document.getElementById('searchProduct');
 
-        // Определить начальный и конечный индекс
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
+    const prevButton = document.getElementById('prev');
+    const nextButton = document.getElementById('next');
 
-        // Показать только строки для текущей страницы
-        for (let i = start; i < end && i < totalRows; i++) {
-            tableRows[i].classList.remove("hidden");
+    searchType.addEventListener('change', function () {
+        if (this.value === 'productId') {
+            searchProductInput.type = 'number';
+            searchProductInput.placeholder = 'ID';
+            searchProductInput.min = '1';
+            searchProductInput.max = '2147483647';
+            searchProductInput.minLength = '';
+            searchProductInput.maxLength = '';
+        } else {
+            searchProductInput.type = 'text';
+            searchProductInput.placeholder = 'Название';
+            searchProductInput.min = '';
+            searchProductInput.max = '';
+            searchProductInput.maxLength = '15';
+            searchProductInput.minLength = '2';
         }
-    }
+    });
+    document.getElementById('searchProductForm').onsubmit = async function (event) {
+        event.preventDefault();
+        const searchType = document.getElementById('searchType').value;
+        const searchProduct = document.getElementById('searchProduct').value;
+        const tableRows = document.querySelectorAll('#productUserTable tbody tr')
 
-    function nextPage() {
-        const totalRows = document.querySelectorAll("#productTable tbody tr").length;
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayTable();
-        }
-    }
+        try {
+            if (searchType === 'productId') {
+                const id = parseInt(searchProduct);
+                const res = await axios.get(`/products/product/${id}`);
+                // alert('Продукт успешно найден');
+                // location.reload();
+                const tableRows = document.querySelectorAll("#productUserTable tbody tr");
+                tableRows.forEach(row => row.classList.add("hidden"));
 
-    function prevPage() {
-        if (currentPage > 1) {
-            currentPage--;
-            displayTable();
-        }
-    }
-
-    displayTable();
-
-    function sortTable(columnIndex) {
-        const table = document.getElementById("productTable");
-        const rows = Array.from(table.rows).slice(1);
-        const isAscending = table.getAttribute('data-order') === 'asc';
-        const directionModifier = isAscending ? 1 : -1;
-
-        rows.sort((a, b) => {
-            const aText = a.cells[columnIndex].textContent.trim();
-            const bText = b.cells[columnIndex].textContent.trim();
-            const aValue = isNaN(aText) ? aText : parseFloat(aText);
-            const bValue = isNaN(bText) ? bText : parseFloat(bText);
-
-            return aValue > bValue ? (1 * directionModifier) : (-1 * directionModifier);
-        });
-
-        // Удалить все строки из таблицы и добавить отсортированные
-        const tbody = table.querySelector("tbody");
-        tbody.innerHTML = '';
-        rows.forEach(row => tbody.appendChild(row));
-
-        // Сбросить текущую страницу на 1 после сортировки
-        currentPage = 1;
-        displayTable(); // Обновить отображение таблицы
-
-        table.setAttribute('data-order', isAscending ? 'desc' : 'asc');
-        updateSortIcons(columnIndex, isAscending);
-    }
-
-    function updateSortIcons(columnIndex, isAscending) {
-        const headers = document.querySelectorAll("#productTable th");
-        headers.forEach((header, index) => {
-            const icon = header.querySelector('.sort-icon');
-            if (icon) {
-                if (index === columnIndex) {
-                    icon.className = 'sort-icon ' + (isAscending ? 'asc' : 'desc');
-                } else {
-                    icon.className = 'sort-icon';
+                // Найти строку с найденным продуктом и показать её
+                const foundRow = Array.from(tableRows).find(row => row.cells[0].textContent.trim() === res.data.id.toString());
+                if (foundRow) {
+                    foundRow.classList.remove("hidden");
+                    prevButton.disabled = true;
+                    nextButton.disabled = true;
                 }
+            } else {
+                const name = searchProduct.toString();
+                console.log(name)
+                const res = await axios.get(`/products/product/name/${name}`);
+
+                tableRows.forEach(row => row.classList.add("hidden"));
+
+                tableRows.forEach(row => {
+                    if (row.cells[1].textContent.trim() === searchProduct) {
+                        row.classList.remove("hidden");
+                        prevButton.disabled = true;
+                        nextButton.disabled = true;
+                    }
+                })
             }
-        });
+        } catch (error) {
+            alert(`Ошибка ${error.response.status}: ${error.response?.data?.detail || error.message}`);
+
+        }
+    };
+    document.getElementById('refreshTable').onclick = function () {
+        displayTable('productUserTable', user_pages);
+        prevButton.disabled = false;
+        nextButton.disabled = false;
     }
+
 
     $(document).ready(function () {
         checkUser();
+        displayTable('productUserTable', user_pages);
         initializeQuantityForms();
-        setupNavigation();
-        setupReportLink();
+        setupUserNavigation();
+        // setupReportLink();
     });
 </script>
 </body>

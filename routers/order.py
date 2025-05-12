@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException, APIRouter
-from loguru import logger
+from pydantic import ValidationError
 from sqlalchemy import select, func, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +11,7 @@ from datetime import datetime
 
 from config import settings
 from models.tables import Order, User, Product, Ordered_product
-from utils import get_items, get_db, delete_object, customer_templates, manager_templates
+from utils import get_items, get_db, delete_object, customer_templates, manager_templates, get_order_products
 from services.token import ALGORITHM, verify_manager_role
 from models.schemas import OrderRequest
 
@@ -26,36 +26,56 @@ async def get_orders(session: AsyncSession = Depends(get_db)):
     return await get_items(Order, session)
 
 
-@router.get("/{user_phone}", dependencies=[Depends(verify_manager_role)])
-async def get_user_orders(user_phone: str, session: AsyncSession = Depends(get_db)):
+@router.get("/{phone}", dependencies=[Depends(verify_manager_role)])
+async def get_user_orders(phone: str, session: AsyncSession = Depends(get_db)):
     try:
-        user = await session.execute(select(User).where(User.phone == user_phone))
+        user = await session.execute(select(User).where(User.phone == phone))
         user = user.scalars().first()
 
         if user is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Пользователя с номером {user_phone} нет")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"Покупатель с номером: {phone} не найден.")
 
         orders = await session.execute(select(Order).where(Order.customer_phone == user.phone))
         orders = orders.scalars().all()
+
+        if len(orders) == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"Данный покупатель заказов не совершал.")
+
         return orders
-    except IntegrityError:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка сервера")
+
+    except HTTPException as NotFound:
+        raise NotFound
+
+    except SQLAlchemyError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Необрабатываемое значение: {phone}.")
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f"Ошибка сервера. Не удалось найти заказы: {e}")
 
 
-@router.get("/order/id/{order_id}", dependencies=[Depends(verify_manager_role)])
-async def get_order_by_id(order_id: int, session: AsyncSession = Depends(get_db)):
+@router.get("/order/{id}", dependencies=[Depends(verify_manager_role)])
+async def get_order_by_id(id: int, session: AsyncSession = Depends(get_db)):
     try:
-        order = await session.execute(select(Order).where(Order.id == order_id))
+        order = await session.execute(select(Order).where(Order.id == id))
         order = order.scalars().first()
 
         if order is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Заказ с id {order_id} не существует")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Заказ с ID: {id} не найден.")
 
         return order
+
+    except HTTPException as NotFound:
+        raise NotFound
+
     except SQLAlchemyError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Неверный тип данных")
-    except IntegrityError:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка сервера")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Необрабатываемое значение: {id}.")
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f"Ошибка сервера. Не удалось найти заказ: {e}")
 
 
 @router.get("/order/report/{phone}", response_class=HTMLResponse)
@@ -65,12 +85,23 @@ async def create_user_report(phone: str, request: Request, session: AsyncSession
         user = user.scalars().first()
 
         if user is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Пользователя с номером {phone} нет")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"Покупатель с номером: {phone} не найден.")
 
         orders_query = select(Order).where(Order.customer_phone == user.phone)
         orders = (await session.execute(orders_query)).scalars().all()
 
+        orders_products = []
+        for order in orders:
+            products = await get_order_products(order.id, session)
+            orders_products.append(products)
+
         total_orders = len(orders)
+
+        if total_orders == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Данный покупатель заказов не совершал")
+
         total_revenue = sum(order.total for order in orders) if total_orders > 0 else 0
         average_check = total_revenue / total_orders if total_orders > 0 else 0
 
@@ -92,42 +123,49 @@ async def create_user_report(phone: str, request: Request, session: AsyncSession
 
         report = {
             "ФИО": f"{user.last_name} {user.first_name} {user.patrynomic}",
+            "Телефон": user.phone,
             "Всего заказов": total_orders,
             "Средний чек": round(float(average_check), 2) if total_orders > 0 else 0,
             "Общая сумма покупок": round(float(total_revenue), 2),
-            "Часто покупаемый продукт": most_popular_product_name
+            "Часто покупаемый товар": most_popular_product_name
         }
-        return customer_templates.TemplateResponse("report.html", {"request": request, "report": report})
+        return customer_templates.TemplateResponse("report.html",
+                                                   {"request": request, "report": report, "orders": orders_products})
         # return JSONResponse(status_code=status.HTTP_200_OK, content=report)
+
+    except HTTPException as NotFound:
+        raise NotFound
+
     except SQLAlchemyError:
-        return HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail="Неверный тип данных")
-    except IntegrityError:
-        return HTTPException(status_code = status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка сервера. Не удалось сформировать отчёт")
+        return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Необрабатываемое значение: {phone}.")
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f"Ошибка сервера. Не удалось сформировать отчёт: {e}")
 
 
 @router.get("/order/report/from/{from_date}/to/{to_date}", dependencies=[Depends(verify_manager_role)])
-async def create_report_from_date_to_date(from_date: str, to_date: str, request: Request = None, session: AsyncSession = Depends(get_db)):
+async def create_report_from_date_to_date(from_date: str, to_date: str, request: Request = None,
+                                          session: AsyncSession = Depends(get_db)):
     try:
-        convert_from_date = from_date = from_date.replace("T", " ")
-        convert_from_date += ".000000"
-
-        convert_to_date = to_date = to_date.replace("T", " ")
-        convert_to_date += ".000000"
-
-        from_date_dt = datetime.strptime(convert_from_date, '%Y-%m-%d %H:%M:%S.%f')
-        to_date_dt = datetime.strptime(convert_to_date, '%Y-%m-%d %H:%M:%S.%f')
-
-        # from_date_dt = datetime.strptime(from_date, '%Y-%m-%d %H:%M:%S.%f')
-        # to_date_dt = datetime.strptime(to_date, '%Y-%m-%d %H:%M:%S.%f')
+        from_date_dt = datetime.strptime(from_date, '%Y-%m-%d %H:%M:%S')
+        to_date_dt = datetime.strptime(to_date, '%Y-%m-%d %H:%M:%S')
 
         orders_query = (select(Order)
                         .where(Order.date.between(from_date_dt, to_date_dt)))
         orders = (await session.execute(orders_query)).scalars().all()
 
-        if orders is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="В этом периоде заказов нет")
+        orders_n_products = []
+        for order in orders:
+            order_products = await get_order_products(order.id, session)
+            orders_n_products.append(order_products)
 
         total_orders = len(orders)
+
+        if total_orders == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="За данный промежуток времени заказы не совершались.")
+
         total_revenue = sum(order.total for order in orders) if total_orders > 0 else 0
         average_check = total_revenue / total_orders if total_orders > 0 else 0
 
@@ -152,25 +190,29 @@ async def create_report_from_date_to_date(from_date: str, to_date: str, request:
             "Всего заказов": total_orders,
             "Общая сумма покупок": round(float(total_revenue), 2),
             "Средний чек": round(float(average_check), 2),
-            "Самый продаваемый продукт": most_popular_product_name
+            "Самый продаваемый товар": most_popular_product_name
         }
 
         # return JSONResponse(status_code=status.HTTP_200_OK, content=report)
-        return manager_templates.TemplateResponse("period_report.html", {"request": request, "report": report})
+        return manager_templates.TemplateResponse("period_report.html",
+                                                  {"request": request, "report": report, "orders": orders_n_products})
 
+    except HTTPException as NotFound:
+        raise NotFound
 
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                             detail="Неверный формат даты. Используйте YYYY-MM-DD-HH-MM-SS")
-    except IntegrityError:
+
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                             detail="Ошибка сервера. Не удалось сформировать отчёт")
+                            detail=f"Ошибка сервера. Не удалось сформировать отчёт: {e}")
 
 
 @router.post("/order/create", status_code=status.HTTP_201_CREATED)
 async def create_order(order_request: OrderRequest, session: AsyncSession = Depends(get_db)):
     if order_request.token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Пользователь не авторизован")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Вы не авторизованы.")
 
     payload = jwt.decode(order_request.token, settings.secret_key, algorithms=[ALGORITHM])
     phone: str = payload.get("user_phone")
@@ -180,7 +222,7 @@ async def create_order(order_request: OrderRequest, session: AsyncSession = Depe
     user = user.scalars().first()
 
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Пользователя с номером {phone} нет")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Покупатель с номером: {phone} не найден.")
 
     order = Order(
         customer_phone=phone,
@@ -198,7 +240,8 @@ async def create_order(order_request: OrderRequest, session: AsyncSession = Depe
         product = await session.execute(select(Product).where(Product.id == item.product_id))
         product = product.scalars().first()
         if product is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Продукт с id {item.product_id} не существует.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"Товар с ID: {item.product_id} не найден.")
 
         if product.quantity < item.chosen_quantity:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Недостаточно товара на складе.")
@@ -227,6 +270,11 @@ async def create_order(order_request: OrderRequest, session: AsyncSession = Depe
 
     try:
         await session.commit()
+
+    except ValidationError as e:
+        await session.rollback()
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=e.errors())
     except IntegrityError:
         await session.rollback()
         raise HTTPException(
@@ -260,8 +308,9 @@ async def delete_order(id: int, session: AsyncSession = Depends(get_db)):
                                     "Общая сумма заказа": float(order.total)
                                 }
                             })
-    except HTTPException as e:
-        raise e
+    except HTTPException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Заказ с ID: {id} не найден")
+
     except SQLAlchemyError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Неверный тип данных")
+                            detail=f"Необрабатываемое значение: {id}.")

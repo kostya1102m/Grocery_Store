@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 from starlette.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from routers.product import router as product
-from routers.user import router as user
+from api.routers.user import router as user
 from routers.order import router as order
 
 app = FastAPI()
@@ -15,8 +15,8 @@ app.include_router(user)
 app.include_router(order)
 
 origins = [
-    "http://127.0.0.1:8075",
-    "http://127.0.0.1:8076"
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:8010"
 ]
 app.add_middleware(
     CORSMiddleware,
