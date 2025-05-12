@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8010:8010"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    networks:
+      - grocery-network
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1102
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - grocery-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  grocery-network:
+
+volumes:
+  pgdata:
